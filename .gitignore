@@ -1,16 +1,24 @@
-# Python-generated files
+# Python
 __pycache__/
 *.py[oc]
 build/
 dist/
 wheels/
 *.egg-info
-
-# Virtual environments
-.venv
-output
-*.DS_Store
+.venv/
 
 # Environment and database
 .env
 *.db
+
+# OS
+.DS_Store
+
+# Tools
+.claude/
+
+# Rust build artifacts
+target/
+
+# Output data
+output/
