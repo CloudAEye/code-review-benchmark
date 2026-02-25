@@ -1,12 +1,12 @@
 <div align="center">
   <picture>
     <source
-      srcset="./images/dark.png"
+      srcset="./images/light.png"
       media="(prefers-color-scheme: dark)"
       width="125" height="125"
     />
     <img
-      src="./images/light.png"
+      src="./images/dark.png"
       alt="Code Review Benchmark Logo"
       width="125" height="125"
     />
