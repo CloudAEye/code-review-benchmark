@@ -1,140 +1,171 @@
-# PR Review Dataset Builder
+# Code Review Benchmark
 
-Discovers PRs reviewed by a chatbot (via BigQuery), enriches them with GitHub API data, assembles a unified timeline, and runs LLM analysis. Everything is stored in a database (SQLite or PostgreSQL).
+Open-source benchmark for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
 
-## Setup
+## The problem
 
-```bash
-cd pr-review-dataset
-uv sync
-cp .env.example .env  # fill in values
-```
+AI code review tools are proliferating — [Augment](https://www.augmentcode.com/blog/introducing-augment-code-review), [Greptile](https://www.greptile.com/blog/code-review-benchmark), [CodeRabbit](https://www.coderabbit.ai/), GitHub Copilot, and many others all claim to catch real bugs. Some have published benchmark numbers. None have published the benchmark itself.
 
-You need:
-- A GCP project with BigQuery access (for querying `githubarchive.day.*`)
-- A GitHub personal access token with `public_repo` read access
-- `gcloud auth application-default login` (for BigQuery auth)
+Without shared evaluation code, every company grades its own homework. You can't reproduce the results, compare tools on the same dataset, or verify the methodology. This project changes that.
 
-## Environment
+**We open-source everything**: the PRs, the golden comments, the LLM judge prompts, the evaluation pipeline, and a continuously-updated online benchmark that avoids training data leakage.
 
-Key variables in `.env`:
+## Two benchmarks
 
-| Variable | Description | Default |
+### Offline — fixed dataset, reproducible results
+
+**50 PRs** from 5 major open-source projects, each with human-verified golden comments — the real issues a reviewer should catch.
+
+| Repository | Language | Domain |
 |---|---|---|
-| `DATABASE_URL` | SQLite or PostgreSQL URL | `sqlite:///pr_review.db` |
-| `GITHUB_TOKEN` | GitHub personal access token | |
-| `GCP_PROJECT` | GCP project for BigQuery billing | |
-| `MAX_PR_COMMITS` | Skip PRs with more commits | `50` |
-| `MAX_PR_CHANGED_LINES` | Skip PRs with more added+deleted lines | `2000` |
+| [Sentry](https://github.com/getsentry/sentry) | Python | Error tracking |
+| [Grafana](https://github.com/grafana/grafana) | Go | Observability |
+| [Cal.com](https://github.com/calcom/cal.com) | TypeScript | Scheduling |
+| [Discourse](https://github.com/discourse/discourse) | Ruby | Forum platform |
+| [Keycloak](https://github.com/keycloak/keycloak) | Java | Authentication |
 
-## Using PostgreSQL (Cloud SQL)
+Each PR has curated golden comments with severity labels (Low / Medium / High / Critical). An LLM judge matches each tool's review against the golden comments and computes precision and recall.
 
-SQLite works out of the box. For production, use Cloud SQL for PostgreSQL.
+**Tools evaluated**: Augment, Claude Code, CodeRabbit, Codex, Cursor Bugbot, Gemini, GitHub Copilot, Graphite, Greptile, Propel, Qodo, and more. Adding a new tool takes an afternoon — fork the benchmark PRs, trigger the tool, run the pipeline.
 
-### 1. Create a Cloud SQL instance
+> **Known limitation**: Static datasets risk training data leakage — tools may have seen these PRs during training. That's why we also run the online benchmark.
 
-Create a PostgreSQL instance in GCP with public IP enabled.
+See [`offline/README.md`](offline/README.md) for setup and usage.
 
-### 2. Install and run the Cloud SQL Auth Proxy
+### Online — continuous, fresh PRs, no data leakage
 
-The proxy tunnels through your GCP credentials — no IP whitelisting needed.
+The online benchmark continuously samples **fresh real-world PRs from GitHub** where code review bots left comments. Because the PRs are recent, tools can't have memorized them during training.
+
+```
+GitHub Archive (BigQuery)
+        │
+        ▼
+    ┌────────┐     ┌─────────┐     ┌─────────┐     ┌────┐     ┌───────────┐
+    │Discover│────▶│ Enrich  │────▶│ Analyze │────▶│ DB │────▶│ Dashboard │
+    └────────┘     └─────────┘     └─────────┘     └────┘     └───────────┘
+   BigQuery scan   GitHub API     LLM 3-step      Postgres    Interactive
+   finds bot PRs   fetches full   extraction &    or SQLite   filters &
+                   PR context     matching                    time series
+```
+
+**How analysis works**:
+
+1. **Extract bot suggestions** — The LLM reads the diff the bot reviewed and the bot's comments, then extracts each actionable suggestion with its category (bug, security, performance, style, ...) and severity.
+2. **Extract human actions** — The LLM reads the post-review commits and identifies what the developer actually fixed after the bot commented.
+3. **Judge matching** — The LLM determines which bot suggestions correspond to actual fixes, producing per-PR precision (what % of the bot's comments were useful?) and recall (what % of real issues did the bot catch?).
+
+**Bots tracked**: CodeRabbit, GitHub Copilot, Claude, Cursor, Augment, Codex, Gemini, Greptile, Graphite, Qodo, Propel, and others.
+
+**Dashboard features**: Filter by language, project domain, PR type, issue severity, diff size. Track performance over time. Adjustable F-beta weighting.
+
+See [`online/README.md`](online/README.md) for architecture and setup.
+
+## How the LLM judge works
+
+Both benchmarks use an LLM-as-judge approach, but with different methodologies suited to their data:
+
+| | Offline | Online |
+|---|---|---|
+| **Ground truth** | Human-curated golden comments | Developer's post-review fixes |
+| **Precision** | Tool comments that match a golden comment / total tool comments | Bot suggestions matched to real fixes / total suggestions |
+| **Recall** | Golden comments found by the tool / total golden comments | Real fixes caught by the bot / total fixes made |
+| **Judge input** | Golden comment + tool candidate | Full PR timeline: diff, bot comments, post-review commits |
+
+In both cases, the judge prompt asks "do these describe the same underlying issue?" — different wording is fine, only the substance matters.
+
+**Judge model variance**: Different LLM judges can score differently. We mitigate this by storing results per judge model and reporting which model was used. The offline benchmark has been evaluated with Claude Opus 4.5, Claude Sonnet 4.5, and GPT-5.2.
+
+## Repository structure
+
+```
+├── offline/                       # Offline benchmark (fixed dataset)
+│   ├── golden_comments/           #   Human-curated issues per repo (5 JSON files)
+│   ├── code_review_benchmark/     #   Pipeline: fork, download, extract, judge, export
+│   ├── analysis/                  #   Interactive HTML dashboard
+│   ├── tests/                     #   Test suite (no network access required)
+│   └── results/                   #   Evaluation outputs (per judge model)
+│
+├── online/                        # Online benchmark (continuous)
+│   ├── etl/                       #   Python pipeline
+│   │   ├── pipeline/              #     Discover → Enrich → Assemble → Analyze → Label
+│   │   ├── llm/                   #     Prompts, schemas, async client
+│   │   ├── db/                    #     Database layer (SQLite + PostgreSQL)
+│   │   ├── jobs/                  #     Background workers
+│   │   └── dashboard/             #     Streamlit dashboard
+│   └── api_service/               #   Rust API + embedded HTML dashboard
+│
+└── LICENSE                        # MIT
+```
+
+## Quick start
+
+### Offline benchmark
 
 ```bash
-# macOS
-brew install cloud-sql-proxy
+cd offline
+uv sync
+cp .env.example .env               # add GitHub token + LLM API key
 
-# Linux
-curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.15.2/cloud-sql-proxy.linux.amd64
-chmod +x cloud-sql-proxy
+# Download reviews for all tools
+uv run python -m code_review_benchmark.step1_download_prs --output results/benchmark_data.json
 
-# Run in a separate terminal (keep it running)
-cloud-sql-proxy PROJECT:REGION:INSTANCE --port 5433
-# e.g. cloud-sql-proxy feisty-gasket-486610-h2:us-central1:crb-main --port 5433
+# Extract individual issues from reviews
+uv run python -m code_review_benchmark.step2_extract_comments
+
+# Run the LLM judge
+uv run python -m code_review_benchmark.step3_judge_comments
+
+# View results
+open analysis/benchmark_dashboard.html
 ```
 
-### 3. Update `.env`
-
-```
-DATABASE_URL=postgresql://USER:PASSWORD@127.0.0.1:5433/postgres
-```
-
-### 4. Test the connection
+### Online benchmark
 
 ```bash
-psql "host=127.0.0.1 port=5433 dbname=postgres user=USER password=PASSWORD"
-```
+cd online/etl
+uv sync
+cp .env.example .env               # add GitHub token + GCP project + LLM API key
 
-Both `asyncpg` (pipeline) and `psycopg` (dashboard) connect through the proxy transparently.
-
-## Commands
-
-### Discover PRs from BigQuery
-
-```bash
-# Single chatbot
-uv run python main.py discover \
-  --chatbot "coderabbitai[bot]" \
-  --start-date 2024-01-01 \
-  --end-date 2025-01-01
-
-# All chatbots in one BQ scan (uses DB chatbots, or built-in defaults)
+# Discover recent PRs from BigQuery
 uv run python main.py discover --all --days-back 7
-```
 
-### Enrich PRs via GitHub API
+# Enrich with GitHub API data
+uv run python main.py enrich --chatbot "coderabbitai[bot]" --one-shot
 
-```bash
-uv run python main.py enrich \
-  --chatbot "coderabbitai[bot]" \
-  --one-shot --max-prs 50
-```
-
-PRs that exceed size limits are automatically marked as `skipped`. Override the defaults per-run:
-
-```bash
-uv run python main.py enrich \
-  --chatbot "coderabbitai[bot]" \
-  --max-pr-commits 100 \
-  --max-pr-changed-lines 5000 \
-  --one-shot
-```
-
-### Run as a daemon (enrich job)
-
-```bash
-uv run python -m jobs.enrich_job \
-  --chatbot "coderabbitai[bot]" \
-  --max-pr-commits 50 \
-  --max-pr-changed-lines 2000
-```
-
-### Analyze with LLM
-
-```bash
-uv run python main.py analyze --chatbot "coderabbitai[bot]"
+# Run LLM analysis
 uv run python main.py analyze --all
-```
 
-### Import legacy filesystem data
-
-```bash
-uv run python main.py import --output-dir output
-```
-
-### Dashboard
-
-```bash
+# Launch dashboard
 uv run python main.py dashboard
 ```
 
-## PR Status Flow
+## Adding a new tool to the offline benchmark
 
+1. Fork the 50 benchmark PRs into a GitHub org where your tool is installed
+2. Let the tool review each PR
+3. Add the tool name to the download config and run the pipeline
+4. Results appear alongside existing tools in the dashboard
+
+See [`offline/README.md`](offline/README.md) for detailed instructions.
+
+## Contributing
+
+We welcome contributions — new tools, better golden comments, improved judge prompts, additional datasets. Open an issue or PR.
+
+## Citation
+
+If you use this benchmark in your research or product evaluation, please cite:
+
+```bibtex
+@software{code_review_benchmark,
+  title   = {Code Review Benchmark},
+  author  = {TODO: insert Martian's names},
+  url     = {https://github.com/withmartian/code-review-benchmark},
+  year    = {2026},
+  license = {MIT}
+}
 ```
-pending → enriching → enriched → assembled → analyzed
-                ↘ skipped (too large)
-                ↘ error
-```
 
-## Resumability
+## License
 
-Enrichment is resumable per-PR. Each PR tracks its `enrichment_step` — if interrupted, re-run the same command and it picks up where it left off.
+MIT — see [LICENSE](LICENSE).

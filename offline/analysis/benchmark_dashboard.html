@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Review Benchmark Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #fafafa;
+            color: #1a1a1a;
+        }
+        .predefined-filters {
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            padding: 16px 24px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            justify-content: center;
+        }
+        .predefined-filter {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: 1px solid #e5e5e5;
+            border-radius: 20px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            transition: all 0.2s;
+        }
+        .predefined-filter:hover { border-color: #999; color: #333; }
+        .predefined-filter.active { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+        .predefined-filter .arrow { font-size: 12px; }
+        .main-container { display: flex; min-height: calc(100vh - 60px); }
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            border-right: 1px solid #e5e5e5;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .sidebar-intro {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #333;
+            margin-bottom: 24px;
+            font-weight: 500;
+        }
+        .filter-section { margin-bottom: 24px; }
+        .filter-title { font-weight: 600; font-size: 14px; margin-bottom: 12px; color: #1a1a1a; }
+        .filter-options { display: flex; flex-direction: column; gap: 8px; }
+        .filter-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+        }
+        .filter-option input { width: 16px; height: 16px; cursor: pointer; }
+        .filter-option:hover { color: #333; }
+        .more-link { color: #666; font-size: 13px; cursor: pointer; margin-top: 8px; }
+        .more-link:hover { color: #333; }
+        .model-selector select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            font-size: 14px;
+            background: #fff;
+            cursor: pointer;
+        }
+        .model-selector select:hover { border-color: #999; }
+        .content { flex: 1; padding: 24px 32px; background: #fafafa; }
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 24px;
+        }
+        .results-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .results-title {
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .results-description {
+            font-size: 14px;
+            color: #666;
+            margin-top: 8px;
+            max-width: 600px;
+            line-height: 1.5;
+        }
+        .legend-dot { width: 24px; height: 8px; border-radius: 4px; }
+        .share-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border: 1px solid #e5e5e5;
+            border-radius: 6px;
+            background: #fff;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+        }
+        .share-btn:hover { border-color: #999; color: #333; }
+        .chart-container {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        #scatter-plot { width: 100%; height: 500px; }
+        .data-table-container {
+            background: #fff;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .table-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e5e5e5;
+            font-weight: 600;
+            font-size: 16px;
+        }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table th {
+            text-align: left;
+            padding: 12px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #e5e5e5;
+            background: #fafafa;
+            cursor: pointer;
+        }
+        .data-table th:hover { background: #f0f0f0; }
+        .data-table td {
+            padding: 14px 20px;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .data-table tr:last-child td { border-bottom: none; }
+        .data-table tr:hover { background: #fafafa; }
+        .tool-cell { display: flex; align-items: center; gap: 10px; }
+        .tool-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .metric-bar { display: flex; align-items: center; gap: 8px; }
+        .metric-bar-fill {
+            height: 6px;
+            border-radius: 3px;
+            background: #e5e5e5;
+            width: 80px;
+            overflow: hidden;
+        }
+        .metric-bar-value { height: 100%; background: #1a1a1a; border-radius: 3px; }
+        .metric-value { min-width: 50px; text-align: right; }
+        .hidden { display: none; }
+        .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666; }
+        .checkbox-item input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <div class="predefined-filters">
+        <div class="predefined-filter" data-filter-id="high_precision" onclick="applyPredefinedFilter('high_precision')">Highest Precision <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="go_small" onclick="applyPredefinedFilter('go_small')">Best for Small Go PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="domain_ui" onclick="applyPredefinedFilter('domain_ui')">Best for Ui <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="tool_claude_language_typescript_domain_scheduling" onclick="applyPredefinedFilter('tool_claude_language_typescript_domain_scheduling')">Typescript + Scheduling <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="domain_scheduling" onclick="applyPredefinedFilter('domain_scheduling')">Best for Scheduling <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="ruby_medium" onclick="applyPredefinedFilter('ruby_medium')">Best for Medium Ruby PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="tool_qodo_risk_high_context_file" onclick="applyPredefinedFilter('tool_qodo_risk_high_context_file')">High Risk + File Context <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="tool_copilot_language_java_difficulty_subtle" onclick="applyPredefinedFilter('tool_copilot_language_java_difficulty_subtle')">Java + Subtle Bugs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="tool_gemini_domain_authentication_difficulty_subtle" onclick="applyPredefinedFilter('tool_gemini_domain_authentication_difficulty_subtle')">Authentication + Subtle Bugs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="tool_coderabbit_language_go_risk_high" onclick="applyPredefinedFilter('tool_coderabbit_language_go_risk_high')">Go + High Risk <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="domain_authentication" onclick="applyPredefinedFilter('domain_authentication')">Best for Authentication <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="tool_kg_language_go_complexity_moderate" onclick="applyPredefinedFilter('tool_kg_language_go_complexity_moderate')">Go + Moderate Code <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="change_type_performance" onclick="applyPredefinedFilter('change_type_performance')">Best for Performance Optimization <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="change_type_bug_fix" onclick="applyPredefinedFilter('change_type_bug_fix')">Best for Bug Fixes <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="domain_caching" onclick="applyPredefinedFilter('domain_caching')">Best for Caching <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="complexity_complex" onclick="applyPredefinedFilter('complexity_complex')">Best for Complex Code <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="complex_subtle" onclick="applyPredefinedFilter('complex_subtle')">Complex & Subtle <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="high_recall" onclick="applyPredefinedFilter('high_recall')">Highest Recall <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="pr_size_small" onclick="applyPredefinedFilter('pr_size_small')">Best for Small PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="risk_high" onclick="applyPredefinedFilter('risk_high')">Best for High Risk <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="domain_concurrency" onclick="applyPredefinedFilter('domain_concurrency')">Best for Concurrency <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="language_go" onclick="applyPredefinedFilter('language_go')">Best for Go <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="risk_critical" onclick="applyPredefinedFilter('risk_critical')">Best for Critical Risk <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="pr_size_large" onclick="applyPredefinedFilter('pr_size_large')">Best for Large PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="concern_correctness" onclick="applyPredefinedFilter('concern_correctness')">Best for Correctness <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="language_python" onclick="applyPredefinedFilter('language_python')">Best for Python <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="language_java" onclick="applyPredefinedFilter('language_java')">Best for Java <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="difficulty_subtle" onclick="applyPredefinedFilter('difficulty_subtle')">Best for Subtle Bugs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="context_cross_file" onclick="applyPredefinedFilter('context_cross_file')">Best for Cross-File <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="high_f1" onclick="applyPredefinedFilter('high_f1')">Highest F1 <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="language_ruby" onclick="applyPredefinedFilter('language_ruby')">Best for Ruby <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="python_medium" onclick="applyPredefinedFilter('python_medium')">Best for Medium Python PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="context_file" onclick="applyPredefinedFilter('context_file')">Best for File Context <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="change_type_feature" onclick="applyPredefinedFilter('change_type_feature')">Best for Features <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="language_typescript" onclick="applyPredefinedFilter('language_typescript')">Best for Typescript <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="difficulty_moderate" onclick="applyPredefinedFilter('difficulty_moderate')">Best for Moderate Bugs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="java_medium" onclick="applyPredefinedFilter('java_medium')">Best for Medium Java PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="complexity_moderate" onclick="applyPredefinedFilter('complexity_moderate')">Best for Moderate Code <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="pr_size_medium" onclick="applyPredefinedFilter('pr_size_medium')">Best for Medium PRs <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="high_risk_auth" onclick="applyPredefinedFilter('high_risk_auth')">High Risk Auth <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="concern_security" onclick="applyPredefinedFilter('concern_security')">Best for Security <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="security_critical" onclick="applyPredefinedFilter('security_critical')">Security Critical <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="risk_medium" onclick="applyPredefinedFilter('risk_medium')">Best for Medium Risk <span class="arrow">↗</span></div>
+        <div class="predefined-filter" data-filter-id="concern_reliability" onclick="applyPredefinedFilter('concern_reliability')">Best for Reliability <span class="arrow">↗</span></div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <div class="sidebar-intro">
+                Tool performance varies by context. Filter and tailor the benchmark to fit your use case:
+            </div>
+
+            <div class="filter-section model-selector">
+                <div class="filter-title">Judge Model</div>
+                <select id="model-select" onchange="changeModel(this.value)">
+                    <option value="anthropic_claude-opus-4-5-20251101" selected>Anthropic claude-opus-4-5-20251101</option>
+                    <option value="openai_gpt-5.2" >OpenAI gpt-5.2</option>
+                </select>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Language</div>
+                <div class="filter-options" id="language-filters">
+                    <label class="filter-option"><input type="checkbox" id="filter-language-Go" onchange="toggleFilter('language', 'Go')">Go</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-language-Java" onchange="toggleFilter('language', 'Java')">Java</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-language-Python" onchange="toggleFilter('language', 'Python')">Python</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-language-Ruby" onchange="toggleFilter('language', 'Ruby')">Ruby</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-language-TypeScript" onchange="toggleFilter('language', 'TypeScript')">TypeScript</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">PR Size</div>
+                <div class="filter-options" id="pr-size-filters">
+                    <label class="filter-option"><input type="checkbox" id="filter-pr_size-small" onchange="toggleFilter('pr_size', 'small')">Small</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-pr_size-medium" onchange="toggleFilter('pr_size', 'medium')">Medium</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-pr_size-large" onchange="toggleFilter('pr_size', 'large')">Large</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Domain</div>
+                <div class="filter-options" id="domain-filters">
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-API" onchange="toggleFilter('domain', 'API')">Api</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-UI" onchange="toggleFilter('domain', 'UI')">Ui</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-authentication" onchange="toggleFilter('domain', 'authentication')">Authentication</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-caching" onchange="toggleFilter('domain', 'caching')">Caching</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-concurrency" onchange="toggleFilter('domain', 'concurrency')">Concurrency</label>
+                </div>
+                <div class="more-link" onclick="toggleMore('more-domains')">+ More...</div>
+                <div class="filter-options hidden" id="more-domains">
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-configuration" onchange="toggleFilter('domain', 'configuration')">Configuration</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-data_processing" onchange="toggleFilter('domain', 'data_processing')">Data Processing</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-database" onchange="toggleFilter('domain', 'database')">Database</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-file_io" onchange="toggleFilter('domain', 'file_io')">File Io</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-logging" onchange="toggleFilter('domain', 'logging')">Logging</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-scheduling" onchange="toggleFilter('domain', 'scheduling')">Scheduling</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-serialization" onchange="toggleFilter('domain', 'serialization')">Serialization</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-domain-testing" onchange="toggleFilter('domain', 'testing')">Testing</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Code Complexity</div>
+                <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" id="filter-complexity-simple" onchange="toggleFilter('complexity', 'simple')">Simple</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-complexity-moderate" onchange="toggleFilter('complexity', 'moderate')">Moderate</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-complexity-complex" onchange="toggleFilter('complexity', 'complex')">Complex</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Review Difficulty</div>
+                <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" id="filter-difficulty-obvious" onchange="toggleFilter('difficulty', 'obvious')">Obvious</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-difficulty-moderate" onchange="toggleFilter('difficulty', 'moderate')">Moderate</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-difficulty-subtle" onchange="toggleFilter('difficulty', 'subtle')">Subtle</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-difficulty-very_subtle" onchange="toggleFilter('difficulty', 'very_subtle')">Very Subtle</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Risk Level</div>
+                <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" id="filter-risk-low" onchange="toggleFilter('risk', 'low')">Low</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-risk-medium" onchange="toggleFilter('risk', 'medium')">Medium</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-risk-high" onchange="toggleFilter('risk', 'high')">High</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-risk-critical" onchange="toggleFilter('risk', 'critical')">Critical</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Context Required</div>
+                <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" id="filter-context-local" onchange="toggleFilter('context', 'local')">Local</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-context-file" onchange="toggleFilter('context', 'file')">File</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-context-cross_file" onchange="toggleFilter('context', 'cross_file')">Cross-File</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-context-system" onchange="toggleFilter('context', 'system')">System</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Primary Concern</div>
+                <div class="filter-options">
+                    <label class="filter-option"><input type="checkbox" id="filter-concern-correctness" onchange="toggleFilter('concern', 'correctness')">Correctness</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-concern-maintainability" onchange="toggleFilter('concern', 'maintainability')">Maintainability</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-concern-reliability" onchange="toggleFilter('concern', 'reliability')">Reliability</label>
+                    <label class="filter-option"><input type="checkbox" id="filter-concern-security" onchange="toggleFilter('concern', 'security')">Security</label>
+                </div>
+            </div>
+
+            <div class="filter-section">
+                <div class="filter-title">Show Metrics</div>
+                <div class="checkbox-group">
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="show-precision" checked onchange="updateChart()">
+                        Precision
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="show-recall" checked onchange="updateChart()">
+                        Recall
+                    </label>
+                    <label class="checkbox-item">
+                        <input type="checkbox" id="show-f1" checked onchange="updateChart()">
+                        F1 Score
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="content-header">
+                <div>
+                    <div class="results-label">CURRENT RESULTS</div>
+                    <div class="results-title" id="results-title">
+                        All Tools
+                        <span class="legend-dot" style="background: linear-gradient(90deg, #6366f1 50%, #ec4899 50%);"></span>
+                    </div>
+                    <div class="results-description" id="results-description"></div>
+                </div>
+                <button class="share-btn" onclick="shareResults()">
+                    Share <span class="arrow">↗</span>
+                </button>
+            </div>
+
+            <div class="chart-container">
+                <div id="scatter-plot"></div>
+            </div>
+
+            <div class="data-table-container">
+                <div class="table-header">Performance Metrics</div>
+                <table class="data-table" id="metrics-table">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable('tool')">Tool</th>
+                            <th onclick="sortTable('precision')">Precision (%)</th>
+                            <th onclick="sortTable('recall')">Recall (%)</th>
+                            <th onclick="sortTable('f1')">F1 Score (%)</th>
+                            <th onclick="sortTable('tp')">True Positives</th>
+                            <th onclick="sortTable('num_prs')">PRs Evaluated</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // All models data embedded
+        const allModelsData = {"anthropic_claude-opus-4-5-20251101": {"prs": [{"url": "https://github.com/keycloak/keycloak/pull/37429", "language": "Java", "pr_size": "medium", "domain": "UI", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 0, "fp": 5, "fn": 4}, "gemini": {"tp": 2, "fp": 4, "fn": 2}, "claude": {"tp": 1, "fp": 0, "fn": 3}, "augment": {"tp": 2, "fp": 3, "fn": 2}, "bugbot": {"tp": 2, "fp": 0, "fn": 2}, "coderabbit": {"tp": 0, "fp": 0, "fn": 4}, "propel": {"tp": 2, "fp": 0, "fn": 2}, "copilot": {"tp": 3, "fp": 5, "fn": 1}, "baz": {"tp": 0, "fp": 0, "fn": 4}, "greptile": {"tp": 2, "fp": 1, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/37634", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 2, "fp": 1, "fn": 2}, "gemini": {"tp": 3, "fp": 0, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 4}, "augment": {"tp": 2, "fp": 2, "fn": 2}, "propel": {"tp": 2, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 0, "fn": 4}, "graphite": {"tp": 2, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 1, "fn": 2}, "bugbot": {"tp": 2, "fp": 1, "fn": 2}, "copilot": {"tp": 3, "fp": 2, "fn": 1}, "greptile": {"tp": 2, "fp": 0, "fn": 2}, "kg": {"tp": 1, "fp": 2, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/38446", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 0, "fn": 2}, "copilot": {"tp": 0, "fp": 3, "fn": 2}, "augment": {"tp": 1, "fp": 3, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 1, "fp": 3, "fn": 1}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "bugbot": {"tp": 0, "fp": 3, "fn": 2}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/keycloak/keycloak/pull/36882", "language": "Java", "pr_size": "small", "domain": "configuration", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 0, "fp": 0, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 1}, "gemini": {"tp": 0, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 1}, "copilot": {"tp": 0, "fp": 3, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 0, "fn": 1}, "coderabbit": {"tp": 0, "fp": 1, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 1, "fp": 2, "fn": 0}, "augment": {"tp": 0, "fp": 1, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 1}}}, {"url": "https://github.com/keycloak/keycloak/pull/36880", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "complex", "difficulty": "very_subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 0, "fp": 4, "fn": 3}, "gemini": {"tp": 0, "fp": 3, "fn": 3}, "propel": {"tp": 2, "fp": 2, "fn": 1}, "augment": {"tp": 1, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 6, "fn": 2}, "bugbot": {"tp": 2, "fp": 1, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 0, "fp": 3, "fn": 3}, "copilot": {"tp": 1, "fp": 6, "fn": 2}, "baz": {"tp": 2, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 1, "fn": 3}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/37038", "language": "Java", "pr_size": "small", "domain": "authentication", "change_type": "feature", "complexity": "complex", "difficulty": "very_subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"qodo": {"tp": 1, "fp": 2, "fn": 1}, "gemini": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 1, "fp": 4, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "augment": {"tp": 2, "fp": 1, "fn": 0}, "greptile": {"tp": 0, "fp": 0, "fn": 2}, "bugbot": {"tp": 2, "fp": 0, "fn": 0}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "propel": {"tp": 2, "fp": 3, "fn": 0}, "baz": {"tp": 2, "fp": 0, "fn": 0}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/keycloak/keycloak/pull/33832", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 1, "fp": 5, "fn": 1}, "gemini": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 1, "fp": 2, "fn": 1}, "qodo": {"tp": 0, "fp": 5, "fn": 2}, "bugbot": {"tp": 1, "fp": 0, "fn": 1}, "copilot": {"tp": 1, "fp": 3, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 0, "fp": 5, "fn": 2}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "baz": {"tp": 2, "fp": 1, "fn": 0}, "coderabbit": {"tp": 1, "fp": 2, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/keycloak/keycloak/pull/40940", "language": "Java", "pr_size": "small", "domain": "concurrency", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"baz": {"tp": 0, "fp": 1, "fn": 2}, "gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 1, "fp": 0, "fn": 1}, "qodo": {"tp": 2, "fp": 1, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 2, "fp": 2, "fn": 0}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "augment": {"tp": 2, "fp": 0, "fn": 0}, "coderabbit": {"tp": 1, "fp": 0, "fn": 1}, "greptile": {"tp": 1, "fp": 3, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"augment": {"tp": 2, "fp": 0, "fn": 0}, "gemini": {"tp": 2, "fp": 1, "fn": 0}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 2, "fp": 5, "fn": 0}, "propel": {"tp": 1, "fp": 0, "fn": 1}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "baz": {"tp": 2, "fp": 1, "fn": 0}, "greptile": {"tp": 2, "fp": 0, "fn": 0}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/getsentry/sentry/pull/93824", "language": "Python", "pr_size": "large", "domain": "concurrency", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"baz": {"tp": 0, "fp": 0, "fn": 5}, "augment": {"tp": 5, "fp": 1, "fn": 0}, "gemini": {"tp": 1, "fp": 1, "fn": 4}, "bugbot": {"tp": 1, "fp": 0, "fn": 4}, "coderabbit": {"tp": 0, "fp": 1, "fn": 5}, "graphite": {"tp": 1, "fp": 0, "fn": 4}, "claude": {"tp": 0, "fp": 2, "fn": 5}, "qodo": {"tp": 1, "fp": 3, "fn": 4}, "copilot": {"tp": 1, "fp": 5, "fn": 4}, "propel": {"tp": 2, "fp": 2, "fn": 3}, "greptile": {"tp": 1, "fp": 1, "fn": 4}, "kg": {"tp": 0, "fp": 0, "fn": 5}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5", "language": "Python", "pr_size": "large", "domain": "API", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 1, "fn": 3}, "greptile": {"tp": 0, "fp": 2, "fn": 3}, "claude": {"tp": 0, "fp": 0, "fn": 3}, "coderabbit": {"tp": 1, "fp": 16, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "bugbot": {"tp": 1, "fp": 1, "fn": 2}, "copilot": {"tp": 0, "fp": 1, "fn": 3}, "propel": {"tp": 1, "fp": 1, "fn": 2}, "augment": {"tp": 1, "fp": 4, "fn": 2}, "baz": {"tp": 0, "fp": 0, "fn": 3}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1", "language": "Python", "pr_size": "medium", "domain": "API", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 3, "fn": 3}, "claude": {"tp": 2, "fp": 6, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 1, "fp": 2, "fn": 3}, "copilot": {"tp": 3, "fp": 7, "fn": 1}, "bugbot": {"tp": 3, "fp": 1, "fn": 1}, "augment": {"tp": 3, "fp": 1, "fn": 1}, "propel": {"tp": 3, "fp": 1, "fn": 1}, "baz": {"tp": 0, "fp": 0, "fn": 4}, "coderabbit": {"tp": 3, "fp": 2, "fn": 1}, "greptile": {"tp": 1, "fp": 6, "fn": 3}, "kg": {"tp": 1, "fp": 1, "fn": 3}}}, {"url": "https://github.com/grafana/grafana/pull/97529", "language": "Go", "pr_size": "small", "domain": "concurrency", "change_type": "performance", "complexity": "complex", "difficulty": "very_subtle", "risk": "critical", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 1, "fn": 2}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 2, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 2, "fp": 1, "fn": 0}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/getsentry/sentry/pull/80168", "language": "Python", "pr_size": "small", "domain": "data_processing", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 3, "fn": 2}, "bugbot": {"tp": 1, "fp": 0, "fn": 1}, "copilot": {"tp": 2, "fp": 3, "fn": 0}, "propel": {"tp": 1, "fp": 0, "fn": 1}, "augment": {"tp": 2, "fp": 1, "fn": 0}, "baz": {"tp": 0, "fp": 0, "fn": 2}, "coderabbit": {"tp": 0, "fp": 1, "fn": 2}, "greptile": {"tp": 1, "fp": 3, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/getsentry/sentry/pull/80528", "language": "Python", "pr_size": "small", "domain": "scheduling", "change_type": "refactoring", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 5, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "graphite": {"tp": 1, "fp": 0, "fn": 1}, "bugbot": {"tp": 0, "fp": 0, "fn": 2}, "copilot": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 1, "fp": 0, "fn": 1}, "baz": {"tp": 1, "fp": 0, "fn": 1}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/getsentry/sentry/pull/77754", "language": "Python", "pr_size": "medium", "domain": "serialization", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 3}, "claude": {"tp": 2, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 2, "fp": 2, "fn": 2}, "bugbot": {"tp": 1, "fp": 1, "fn": 3}, "copilot": {"tp": 2, "fp": 0, "fn": 2}, "propel": {"tp": 2, "fp": 0, "fn": 2}, "augment": {"tp": 1, "fp": 0, "fn": 3}, "baz": {"tp": 1, "fp": 0, "fn": 3}, "coderabbit": {"tp": 3, "fp": 2, "fn": 1}, "greptile": {"tp": 2, "fp": 0, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 3}}}, {"url": "https://github.com/getsentry/sentry/pull/95633", "language": "Python", "pr_size": "medium", "domain": "concurrency", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 1, "fp": 2, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "bugbot": {"tp": 0, "fp": 2, "fn": 3}, "copilot": {"tp": 0, "fp": 6, "fn": 3}, "propel": {"tp": 0, "fp": 1, "fn": 3}, "augment": {"tp": 0, "fp": 3, "fn": 3}, "baz": {"tp": 0, "fp": 3, "fn": 3}, "coderabbit": {"tp": 0, "fp": 7, "fn": 3}, "greptile": {"tp": 0, "fp": 1, "fn": 3}, "kg": {"tp": 0, "fp": 2, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2", "language": "Python", "pr_size": "medium", "domain": "data_processing", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 4, "fn": 3}, "claude": {"tp": 2, "fp": 5, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 2, "fp": 3, "fn": 1}, "bugbot": {"tp": 3, "fp": 1, "fn": 0}, "copilot": {"tp": 3, "fp": 3, "fn": 0}, "augment": {"tp": 3, "fp": 3, "fn": 0}, "propel": {"tp": 2, "fp": 4, "fn": 1}, "baz": {"tp": 3, "fp": 1, "fn": 0}, "coderabbit": {"tp": 0, "fp": 0, "fn": 3}, "greptile": {"tp": 2, "fp": 3, "fn": 1}, "kg": {"tp": 2, "fp": 2, "fn": 1}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3", "language": "Python", "pr_size": "medium", "domain": "caching", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 5, "fn": 3}, "claude": {"tp": 1, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 2, "fp": 1, "fn": 1}, "bugbot": {"tp": 0, "fp": 3, "fn": 3}, "copilot": {"tp": 1, "fp": 3, "fn": 2}, "augment": {"tp": 2, "fp": 1, "fn": 1}, "propel": {"tp": 1, "fp": 1, "fn": 2}, "baz": {"tp": 0, "fp": 3, "fn": 3}, "coderabbit": {"tp": 2, "fp": 6, "fn": 1}, "greptile": {"tp": 1, "fp": 3, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/grafana/grafana/pull/103633", "language": "Go", "pr_size": "small", "domain": "caching", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 0, "fp": 6, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 1, "fp": 5, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 0, "fp": 1, "fn": 2}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/getsentry/sentry/pull/67876", "language": "Python", "pr_size": "small", "domain": "authentication", "change_type": "security_patch", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 2}, "claude": {"tp": 1, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 1, "fp": 3, "fn": 2}, "bugbot": {"tp": 1, "fp": 2, "fn": 2}, "copilot": {"tp": 1, "fp": 4, "fn": 2}, "augment": {"tp": 1, "fp": 2, "fn": 2}, "propel": {"tp": 1, "fp": 2, "fn": 2}, "coderabbit": {"tp": 1, "fp": 2, "fn": 2}, "baz": {"tp": 1, "fp": 1, "fn": 2}, "greptile": {"tp": 1, "fp": 3, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/32918", "language": "Java", "pr_size": "small", "domain": "caching", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 2}, "claude": {"tp": 0, "fp": 1, "fn": 2}, "graphite": {"tp": 1, "fp": 1, "fn": 1}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 1, "fp": 0, "fn": 1}, "augment": {"tp": 1, "fp": 0, "fn": 1}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 1, "fp": 2, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/94942", "language": "Go", "pr_size": "small", "domain": "data_processing", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 0, "fn": 1}, "claude": {"tp": 2, "fp": 0, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 1, "fn": 0}, "bugbot": {"tp": 1, "fp": 0, "fn": 1}, "copilot": {"tp": 2, "fp": 2, "fn": 0}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 2, "fp": 0, "fn": 0}, "baz": {"tp": 1, "fp": 1, "fn": 1}, "coderabbit": {"tp": 1, "fp": 1, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 2, "fp": 0, "fn": 0}}}, {"url": "https://github.com/grafana/grafana/pull/90939", "language": "Go", "pr_size": "small", "domain": "caching", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 2, "fp": 0, "fn": 0}, "bugbot": {"tp": 1, "fp": 0, "fn": 1}, "propel": {"tp": 1, "fp": 0, "fn": 1}, "augment": {"tp": 2, "fp": 0, "fn": 0}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 1, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 1, "fp": 1, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/80329", "language": "Go", "pr_size": "small", "domain": "logging", "change_type": "performance", "complexity": "simple", "difficulty": "obvious", "risk": "low", "context": "local", "concern": "maintainability", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 0}, "claude": {"tp": 1, "fp": 5, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 1, "fp": 5, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 0}, "copilot": {"tp": 1, "fp": 4, "fn": 0}, "propel": {"tp": 0, "fp": 1, "fn": 1}, "augment": {"tp": 1, "fp": 1, "fn": 0}, "baz": {"tp": 0, "fp": 1, "fn": 1}, "coderabbit": {"tp": 1, "fp": 4, "fn": 0}, "greptile": {"tp": 1, "fp": 3, "fn": 0}, "kg": {"tp": 0, "fp": 0, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/90045", "language": "Go", "pr_size": "medium", "domain": "logging", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 3, "fp": 5, "fn": 0}, "claude": {"tp": 3, "fp": 3, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 3, "fp": 4, "fn": 0}, "bugbot": {"tp": 3, "fp": 3, "fn": 0}, "copilot": {"tp": 3, "fp": 7, "fn": 0}, "propel": {"tp": 1, "fp": 2, "fn": 2}, "augment": {"tp": 3, "fp": 5, "fn": 0}, "baz": {"tp": 2, "fp": 2, "fn": 1}, "coderabbit": {"tp": 3, "fp": 2, "fn": 0}, "greptile": {"tp": 3, "fp": 2, "fn": 0}, "kg": {"tp": 2, "fp": 2, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/106778", "language": "Go", "pr_size": "medium", "domain": "UI", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 0, "fp": 10, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 3, "fn": 2}, "bugbot": {"tp": 2, "fp": 0, "fn": 0}, "copilot": {"tp": 1, "fp": 2, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 6, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 1, "fp": 1, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/107534", "language": "Go", "pr_size": "small", "domain": "testing", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "low", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 3, "fn": 1}, "claude": {"tp": 0, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 0, "fp": 3, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 1}, "copilot": {"tp": 0, "fp": 4, "fn": 1}, "augment": {"tp": 0, "fp": 0, "fn": 1}, "propel": {"tp": 0, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 2, "fn": 1}, "coderabbit": {"tp": 0, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 0, "fn": 1}, "kg": {"tp": 0, "fp": 2, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/79265", "language": "Go", "pr_size": "large", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 4}, "claude": {"tp": 1, "fp": 2, "fn": 4}, "graphite": {"tp": 0, "fp": 0, "fn": 5}, "qodo": {"tp": 2, "fp": 1, "fn": 3}, "copilot": {"tp": 2, "fp": 7, "fn": 3}, "bugbot": {"tp": 0, "fp": 2, "fn": 5}, "augment": {"tp": 1, "fp": 1, "fn": 4}, "propel": {"tp": 1, "fp": 1, "fn": 4}, "baz": {"tp": 0, "fp": 1, "fn": 5}, "coderabbit": {"tp": 3, "fp": 4, "fn": 2}, "greptile": {"tp": 1, "fp": 2, "fn": 4}, "kg": {"tp": 1, "fp": 0, "fn": 4}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9", "language": "Ruby", "pr_size": "small", "domain": "configuration", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 0, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 1, "fn": 1}, "bugbot": {"tp": 1, "fp": 0, "fn": 1}, "copilot": {"tp": 1, "fp": 4, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 0, "fp": 2, "fn": 2}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 0, "fp": 3, "fn": 2}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/grafana/grafana/pull/76186", "language": "Go", "pr_size": "small", "domain": "logging", "change_type": "refactoring", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 3, "fn": 2}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 0, "fp": 0, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 0, "fn": 1}, "greptile": {"tp": 0, "fp": 0, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10", "language": "Ruby", "pr_size": "large", "domain": "configuration", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 10, "fn": 2}, "claude": {"tp": 0, "fp": 3, "fn": 4}, "qodo": {"tp": 2, "fp": 3, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "bugbot": {"tp": 3, "fp": 4, "fn": 1}, "copilot": {"tp": 1, "fp": 4, "fn": 3}, "propel": {"tp": 3, "fp": 0, "fn": 1}, "augment": {"tp": 3, "fp": 2, "fn": 1}, "baz": {"tp": 2, "fp": 0, "fn": 2}, "coderabbit": {"tp": 2, "fp": 9, "fn": 2}, "greptile": {"tp": 2, "fp": 3, "fn": 2}, "kg": {"tp": 0, "fp": 2, "fn": 4}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7", "language": "Ruby", "pr_size": "medium", "domain": "UI", "change_type": "bug_fix", "complexity": "simple", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 3, "fn": 1}, "claude": {"tp": 3, "fp": 5, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 0, "fp": 3, "fn": 3}, "bugbot": {"tp": 3, "fp": 1, "fn": 0}, "copilot": {"tp": 3, "fp": 1, "fn": 0}, "augment": {"tp": 3, "fp": 2, "fn": 0}, "propel": {"tp": 1, "fp": 0, "fn": 2}, "baz": {"tp": 3, "fp": 1, "fn": 0}, "coderabbit": {"tp": 0, "fp": 2, "fn": 3}, "greptile": {"tp": 1, "fp": 5, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8", "language": "Ruby", "pr_size": "medium", "domain": "API", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 5, "fn": 2}, "claude": {"tp": 2, "fp": 4, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 1, "fp": 5, "fn": 2}, "bugbot": {"tp": 1, "fp": 1, "fn": 2}, "copilot": {"tp": 1, "fp": 9, "fn": 2}, "augment": {"tp": 2, "fp": 2, "fn": 1}, "propel": {"tp": 1, "fp": 4, "fn": 2}, "baz": {"tp": 1, "fp": 2, "fn": 2}, "coderabbit": {"tp": 2, "fp": 8, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3", "language": "Ruby", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 1, "fp": 6, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "copilot": {"tp": 1, "fp": 1, "fn": 1}, "bugbot": {"tp": 0, "fp": 2, "fn": 2}, "augment": {"tp": 1, "fp": 4, "fn": 1}, "propel": {"tp": 1, "fp": 1, "fn": 1}, "baz": {"tp": 0, "fp": 2, "fn": 2}, "coderabbit": {"tp": 1, "fp": 7, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5", "language": "Ruby", "pr_size": "small", "domain": "UI", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 0, "fn": 1}, "claude": {"tp": 0, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 0, "fp": 3, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 0, "fp": 1, "fn": 2}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6", "language": "Ruby", "pr_size": "small", "domain": "serialization", "change_type": "feature", "complexity": "simple", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 1}, "claude": {"tp": 0, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 1, "fp": 4, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 0}, "copilot": {"tp": 1, "fp": 3, "fn": 0}, "augment": {"tp": 1, "fp": 1, "fn": 0}, "propel": {"tp": 1, "fp": 1, "fn": 0}, "baz": {"tp": 1, "fp": 1, "fn": 0}, "coderabbit": {"tp": 1, "fp": 0, "fn": 0}, "greptile": {"tp": 0, "fp": 3, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 1}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4", "language": "Ruby", "pr_size": "large", "domain": "API", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 5, "fp": 3, "fn": 1}, "claude": {"tp": 3, "fp": 4, "fn": 3}, "graphite": {"tp": 0, "fp": 0, "fn": 6}, "qodo": {"tp": 2, "fp": 3, "fn": 4}, "bugbot": {"tp": 1, "fp": 4, "fn": 5}, "copilot": {"tp": 1, "fp": 3, "fn": 5}, "augment": {"tp": 3, "fp": 2, "fn": 3}, "propel": {"tp": 1, "fp": 1, "fn": 5}, "baz": {"tp": 1, "fp": 3, "fn": 5}, "coderabbit": {"tp": 4, "fp": 20, "fn": 2}, "greptile": {"tp": 4, "fp": 2, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 6}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1", "language": "Ruby", "pr_size": "medium", "domain": "file_io", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 2, "fn": 1}, "claude": {"tp": 1, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 3, "fp": 1, "fn": 0}, "bugbot": {"tp": 2, "fp": 1, "fn": 1}, "copilot": {"tp": 2, "fp": 4, "fn": 1}, "augment": {"tp": 2, "fp": 5, "fn": 1}, "propel": {"tp": 2, "fp": 2, "fn": 1}, "baz": {"tp": 2, "fp": 1, "fn": 1}, "coderabbit": {"tp": 2, "fp": 7, "fn": 1}, "greptile": {"tp": 2, "fp": 2, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2", "language": "Ruby", "pr_size": "medium", "domain": "UI", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 0, "fn": 0}, "claude": {"tp": 0, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 2, "fn": 0}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 2, "fp": 3, "fn": 0}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 1, "fp": 0, "fn": 1}, "baz": {"tp": 1, "fp": 0, "fn": 1}, "coderabbit": {"tp": 2, "fp": 6, "fn": 0}, "greptile": {"tp": 2, "fp": 1, "fn": 0}, "kg": {"tp": 1, "fp": 1, "fn": 1}}}, {"url": "https://github.com/calcom/cal.com/pull/22532", "language": "TypeScript", "pr_size": "medium", "domain": "caching", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 3, "fn": 1}, "claude": {"tp": 0, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 2, "fp": 11, "fn": 0}, "augment": {"tp": 2, "fp": 4, "fn": 0}, "propel": {"tp": 2, "fp": 2, "fn": 0}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 1, "fp": 10, "fn": 1}, "greptile": {"tp": 1, "fp": 1, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/calcom/cal.com/pull/8330", "language": "TypeScript", "pr_size": "small", "domain": "scheduling", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 4, "fn": 0}, "claude": {"tp": 2, "fp": 0, "fn": 0}, "graphite": {"tp": 2, "fp": 0, "fn": 0}, "qodo": {"tp": 2, "fp": 4, "fn": 0}, "bugbot": {"tp": 2, "fp": 1, "fn": 0}, "copilot": {"tp": 2, "fp": 4, "fn": 0}, "augment": {"tp": 2, "fp": 3, "fn": 0}, "propel": {"tp": 1, "fp": 1, "fn": 1}, "baz": {"tp": 2, "fp": 1, "fn": 0}, "coderabbit": {"tp": 2, "fp": 2, "fn": 0}, "greptile": {"tp": 2, "fp": 0, "fn": 0}, "kg": {"tp": 1, "fp": 2, "fn": 1}}}, {"url": "https://github.com/calcom/cal.com/pull/14943", "language": "TypeScript", "pr_size": "small", "domain": "scheduling", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 2}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 1, "fp": 0, "fn": 1}, "qodo": {"tp": 2, "fp": 1, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 1, "fp": 3, "fn": 1}, "augment": {"tp": 2, "fp": 1, "fn": 0}, "propel": {"tp": 2, "fp": 1, "fn": 0}, "baz": {"tp": 1, "fp": 0, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 2, "fn": 1}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/calcom/cal.com/pull/22345", "language": "TypeScript", "pr_size": "small", "domain": "database", "change_type": "migration", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 4, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 0, "fp": 3, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 2, "fn": 2}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/calcom/cal.com/pull/11059", "language": "TypeScript", "pr_size": "large", "domain": "authentication", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 3, "fp": 3, "fn": 2}, "claude": {"tp": 3, "fp": 3, "fn": 2}, "graphite": {"tp": 1, "fp": 1, "fn": 4}, "qodo": {"tp": 3, "fp": 7, "fn": 2}, "bugbot": {"tp": 4, "fp": 6, "fn": 1}, "copilot": {"tp": 4, "fp": 11, "fn": 1}, "augment": {"tp": 5, "fp": 6, "fn": 0}, "propel": {"tp": 1, "fp": 1, "fn": 4}, "baz": {"tp": 4, "fp": 1, "fn": 1}, "coderabbit": {"tp": 5, "fp": 14, "fn": 0}, "greptile": {"tp": 3, "fp": 7, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 5}}}, {"url": "https://github.com/calcom/cal.com/pull/7232", "language": "TypeScript", "pr_size": "medium", "domain": "scheduling", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 3, "fn": 2}, "claude": {"tp": 1, "fp": 3, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 2, "fp": 10, "fn": 0}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 0, "fp": 2, "fn": 2}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 4, "fn": 1}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/calcom/cal.com/pull/14740", "language": "TypeScript", "pr_size": "large", "domain": "scheduling", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 3, "fn": 4}, "claude": {"tp": 2, "fp": 0, "fn": 3}, "graphite": {"tp": 1, "fp": 0, "fn": 4}, "qodo": {"tp": 2, "fp": 3, "fn": 3}, "bugbot": {"tp": 3, "fp": 3, "fn": 2}, "copilot": {"tp": 3, "fp": 7, "fn": 2}, "augment": {"tp": 4, "fp": 3, "fn": 1}, "propel": {"tp": 4, "fp": 0, "fn": 1}, "baz": {"tp": 1, "fp": 1, "fn": 4}, "coderabbit": {"tp": 4, "fp": 7, "fn": 1}, "greptile": {"tp": 4, "fp": 2, "fn": 1}, "kg": {"tp": 2, "fp": 0, "fn": 3}}}, {"url": "https://github.com/calcom/cal.com/pull/10600", "language": "TypeScript", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 5, "fn": 3}, "claude": {"tp": 1, "fp": 8, "fn": 3}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 0, "fp": 5, "fn": 4}, "bugbot": {"tp": 1, "fp": 0, "fn": 3}, "copilot": {"tp": 1, "fp": 9, "fn": 3}, "augment": {"tp": 1, "fp": 4, "fn": 3}, "propel": {"tp": 1, "fp": 2, "fn": 3}, "baz": {"tp": 0, "fp": 1, "fn": 4}, "coderabbit": {"tp": 0, "fp": 0, "fn": 4}, "greptile": {"tp": 0, "fp": 4, "fn": 4}, "kg": {"tp": 0, "fp": 0, "fn": 4}}}, {"url": "https://github.com/calcom/cal.com/pull/10967", "language": "TypeScript", "pr_size": "large", "domain": "scheduling", "change_type": "bug_fix", "complexity": "complex", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 9, "fn": 4}, "claude": {"tp": 3, "fp": 4, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 5}, "qodo": {"tp": 0, "fp": 3, "fn": 5}, "bugbot": {"tp": 2, "fp": 4, "fn": 3}, "copilot": {"tp": 4, "fp": 7, "fn": 1}, "augment": {"tp": 2, "fp": 3, "fn": 3}, "propel": {"tp": 1, "fp": 0, "fn": 4}, "baz": {"tp": 1, "fp": 1, "fn": 4}, "coderabbit": {"tp": 0, "fp": 0, "fn": 5}, "greptile": {"tp": 2, "fp": 2, "fn": 3}, "kg": {"tp": 0, "fp": 0, "fn": 5}}}, {"url": "https://github.com/calcom/cal.com/pull/8087", "language": "TypeScript", "pr_size": "medium", "domain": "concurrency", "change_type": "refactoring", "complexity": "moderate", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "claude": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 1, "fp": 3, "fn": 1}, "augment": {"tp": 1, "fp": 5, "fn": 1}, "propel": {"tp": 0, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 1, "fn": 1}, "kg": {"tp": 1, "fp": 2, "fn": 1}}}], "tools": ["augment", "baz", "bugbot", "claude", "coderabbit", "copilot", "gemini", "graphite", "greptile", "kg", "propel", "qodo"], "dimensions": {"language": ["Go", "Java", "Python", "Ruby", "TypeScript"], "pr_size": ["small", "medium", "large"], "domain": ["API", "UI", "authentication", "caching", "concurrency", "configuration", "data_processing", "database", "file_io", "logging", "scheduling", "serialization", "testing"], "change_type": ["bug_fix", "feature", "migration", "performance", "refactoring", "security_patch"], "complexity": ["simple", "moderate", "complex"], "difficulty": ["obvious", "moderate", "subtle", "very_subtle"], "risk": ["low", "medium", "high", "critical"], "context": ["local", "file", "cross_file", "system"], "concern": ["correctness", "maintainability", "reliability", "security"]}, "overall_metrics": {"qodo": {"precision": 30.6, "recall": 43.8, "f1": 36.0, "tp": 60, "fp": 136, "fn": 77, "num_prs": 50}, "graphite": {"precision": 75.0, "recall": 8.8, "f1": 15.7, "tp": 12, "fp": 4, "fn": 125, "num_prs": 50}, "claude": {"precision": 33.1, "recall": 35.8, "f1": 34.4, "tp": 49, "fp": 99, "fn": 88, "num_prs": 50}, "bugbot": {"precision": 46.2, "recall": 43.8, "f1": 44.9, "tp": 60, "fp": 70, "fn": 77, "num_prs": 50}, "propel": {"precision": 46.0, "recall": 38.0, "f1": 41.6, "tp": 52, "fp": 61, "fn": 85, "num_prs": 50}, "kg": {"precision": 46.9, "recall": 16.8, "f1": 24.7, "tp": 23, "fp": 26, "fn": 114, "num_prs": 50}, "coderabbit": {"precision": 23.9, "recall": 39.4, "f1": 29.8, "tp": 54, "fp": 172, "fn": 83, "num_prs": 50}, "copilot": {"precision": 26.6, "recall": 53.3, "f1": 35.5, "tp": 73, "fp": 201, "fn": 64, "num_prs": 50}, "baz": {"precision": 44.0, "recall": 29.2, "f1": 35.1, "tp": 40, "fp": 51, "fn": 97, "num_prs": 50}, "greptile": {"precision": 38.4, "recall": 38.7, "f1": 38.5, "tp": 53, "fp": 85, "fn": 84, "num_prs": 50}, "augment": {"precision": 47.0, "recall": 62.8, "f1": 53.8, "tp": 86, "fp": 97, "fn": 51, "num_prs": 50}, "gemini": {"precision": 29.8, "recall": 37.2, "f1": 33.1, "tp": 51, "fp": 120, "fn": 86, "num_prs": 50}}}, "openai_gpt-5.2": {"prs": [{"url": "https://github.com/keycloak/keycloak/pull/37429", "language": "Java", "pr_size": "medium", "domain": "UI", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 0, "fp": 5, "fn": 4}, "gemini": {"tp": 0, "fp": 5, "fn": 4}, "claude": {"tp": 1, "fp": 0, "fn": 3}, "augment": {"tp": 2, "fp": 3, "fn": 2}, "bugbot": {"tp": 2, "fp": 0, "fn": 2}, "coderabbit": {"tp": 0, "fp": 0, "fn": 4}, "propel": {"tp": 1, "fp": 1, "fn": 3}, "copilot": {"tp": 3, "fp": 4, "fn": 1}, "baz": {"tp": 0, "fp": 0, "fn": 4}, "greptile": {"tp": 2, "fp": 1, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/37634", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 2, "fp": 2, "fn": 2}, "gemini": {"tp": 3, "fp": 1, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 4}, "augment": {"tp": 2, "fp": 6, "fn": 2}, "propel": {"tp": 2, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 0, "fn": 4}, "graphite": {"tp": 2, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 2, "fn": 2}, "bugbot": {"tp": 2, "fp": 3, "fn": 2}, "copilot": {"tp": 3, "fp": 2, "fn": 1}, "greptile": {"tp": 2, "fp": 1, "fn": 2}, "kg": {"tp": 1, "fp": 2, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/38446", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 0, "fn": 2}, "copilot": {"tp": 0, "fp": 6, "fn": 2}, "augment": {"tp": 1, "fp": 3, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 0, "fp": 3, "fn": 2}, "claude": {"tp": 1, "fp": 3, "fn": 1}, "qodo": {"tp": 1, "fp": 5, "fn": 1}, "bugbot": {"tp": 0, "fp": 3, "fn": 2}, "propel": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/keycloak/keycloak/pull/36882", "language": "Java", "pr_size": "small", "domain": "configuration", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 0, "fp": 0, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 1}, "gemini": {"tp": 0, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 1}, "copilot": {"tp": 0, "fp": 4, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 0, "fn": 1}, "coderabbit": {"tp": 0, "fp": 2, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 1, "fp": 5, "fn": 0}, "augment": {"tp": 0, "fp": 1, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 1}}}, {"url": "https://github.com/keycloak/keycloak/pull/36880", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "complex", "difficulty": "very_subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 0, "fp": 6, "fn": 3}, "gemini": {"tp": 0, "fp": 3, "fn": 3}, "propel": {"tp": 2, "fp": 3, "fn": 1}, "augment": {"tp": 1, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 6, "fn": 2}, "bugbot": {"tp": 2, "fp": 2, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 0, "fp": 3, "fn": 3}, "copilot": {"tp": 1, "fp": 6, "fn": 2}, "baz": {"tp": 2, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 1, "fn": 3}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/37038", "language": "Java", "pr_size": "small", "domain": "authentication", "change_type": "feature", "complexity": "complex", "difficulty": "very_subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"qodo": {"tp": 1, "fp": 3, "fn": 1}, "gemini": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 1, "fp": 4, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "augment": {"tp": 2, "fp": 5, "fn": 0}, "greptile": {"tp": 0, "fp": 0, "fn": 2}, "bugbot": {"tp": 2, "fp": 0, "fn": 0}, "claude": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "propel": {"tp": 2, "fp": 2, "fn": 0}, "baz": {"tp": 2, "fp": 0, "fn": 0}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/keycloak/keycloak/pull/33832", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"claude": {"tp": 2, "fp": 4, "fn": 0}, "gemini": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 1, "fp": 1, "fn": 1}, "qodo": {"tp": 0, "fp": 6, "fn": 2}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 1, "fp": 3, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 0, "fp": 4, "fn": 2}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "baz": {"tp": 1, "fp": 1, "fn": 1}, "coderabbit": {"tp": 2, "fp": 9, "fn": 0}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/keycloak/keycloak/pull/40940", "language": "Java", "pr_size": "small", "domain": "concurrency", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"baz": {"tp": 0, "fp": 1, "fn": 2}, "gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 1, "fp": 0, "fn": 1}, "qodo": {"tp": 2, "fp": 2, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 2, "fp": 2, "fn": 0}, "propel": {"tp": 1, "fp": 3, "fn": 1}, "augment": {"tp": 2, "fp": 5, "fn": 0}, "coderabbit": {"tp": 1, "fp": 0, "fn": 1}, "greptile": {"tp": 1, "fp": 3, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/ai-code-review-evaluation/keycloak-greptile/pull/1", "language": "Java", "pr_size": "medium", "domain": "authentication", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"augment": {"tp": 2, "fp": 1, "fn": 0}, "gemini": {"tp": 2, "fp": 1, "fn": 0}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 0, "fp": 2, "fn": 2}, "copilot": {"tp": 2, "fp": 4, "fn": 0}, "propel": {"tp": 1, "fp": 0, "fn": 1}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "baz": {"tp": 2, "fp": 0, "fn": 0}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/getsentry/sentry/pull/93824", "language": "Python", "pr_size": "large", "domain": "concurrency", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"baz": {"tp": 0, "fp": 0, "fn": 5}, "augment": {"tp": 5, "fp": 1, "fn": 0}, "gemini": {"tp": 1, "fp": 1, "fn": 4}, "bugbot": {"tp": 1, "fp": 0, "fn": 4}, "coderabbit": {"tp": 1, "fp": 3, "fn": 4}, "graphite": {"tp": 1, "fp": 0, "fn": 4}, "claude": {"tp": 0, "fp": 3, "fn": 5}, "qodo": {"tp": 1, "fp": 3, "fn": 4}, "copilot": {"tp": 1, "fp": 5, "fn": 4}, "propel": {"tp": 2, "fp": 4, "fn": 3}, "greptile": {"tp": 1, "fp": 1, "fn": 4}, "kg": {"tp": 0, "fp": 0, "fn": 5}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/5", "language": "Python", "pr_size": "large", "domain": "API", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 1, "fn": 3}, "greptile": {"tp": 0, "fp": 2, "fn": 3}, "claude": {"tp": 0, "fp": 0, "fn": 3}, "coderabbit": {"tp": 1, "fp": 17, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "bugbot": {"tp": 1, "fp": 2, "fn": 2}, "copilot": {"tp": 0, "fp": 3, "fn": 3}, "propel": {"tp": 1, "fp": 2, "fn": 2}, "augment": {"tp": 1, "fp": 4, "fn": 2}, "baz": {"tp": 0, "fp": 0, "fn": 3}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/1", "language": "Python", "pr_size": "medium", "domain": "API", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 5, "fn": 3}, "claude": {"tp": 2, "fp": 7, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 1, "fp": 2, "fn": 3}, "copilot": {"tp": 3, "fp": 13, "fn": 1}, "bugbot": {"tp": 3, "fp": 1, "fn": 1}, "augment": {"tp": 3, "fp": 1, "fn": 1}, "propel": {"tp": 3, "fp": 1, "fn": 1}, "baz": {"tp": 0, "fp": 0, "fn": 4}, "coderabbit": {"tp": 3, "fp": 4, "fn": 1}, "greptile": {"tp": 1, "fp": 6, "fn": 3}, "kg": {"tp": 1, "fp": 1, "fn": 3}}}, {"url": "https://github.com/grafana/grafana/pull/97529", "language": "Go", "pr_size": "small", "domain": "concurrency", "change_type": "performance", "complexity": "complex", "difficulty": "very_subtle", "risk": "critical", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 1, "fn": 2}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 4, "fn": 0}, "bugbot": {"tp": 1, "fp": 4, "fn": 1}, "copilot": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 2, "fp": 3, "fn": 0}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "greptile": {"tp": 0, "fp": 8, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/getsentry/sentry/pull/80168", "language": "Python", "pr_size": "small", "domain": "data_processing", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 3, "fn": 2}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 2, "fp": 3, "fn": 0}, "propel": {"tp": 1, "fp": 1, "fn": 1}, "augment": {"tp": 2, "fp": 3, "fn": 0}, "baz": {"tp": 0, "fp": 0, "fn": 2}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "greptile": {"tp": 1, "fp": 1, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/getsentry/sentry/pull/80528", "language": "Python", "pr_size": "small", "domain": "scheduling", "change_type": "refactoring", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 5, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "graphite": {"tp": 1, "fp": 1, "fn": 1}, "bugbot": {"tp": 0, "fp": 0, "fn": 2}, "copilot": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 1, "fp": 1, "fn": 1}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 1, "fp": 3, "fn": 1}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/getsentry/sentry/pull/77754", "language": "Python", "pr_size": "medium", "domain": "serialization", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 3}, "claude": {"tp": 2, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 2, "fp": 2, "fn": 2}, "bugbot": {"tp": 1, "fp": 1, "fn": 3}, "copilot": {"tp": 2, "fp": 0, "fn": 2}, "propel": {"tp": 2, "fp": 0, "fn": 2}, "augment": {"tp": 1, "fp": 0, "fn": 3}, "baz": {"tp": 1, "fp": 1, "fn": 3}, "coderabbit": {"tp": 3, "fp": 2, "fn": 1}, "greptile": {"tp": 2, "fp": 0, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 3}}}, {"url": "https://github.com/getsentry/sentry/pull/95633", "language": "Python", "pr_size": "medium", "domain": "concurrency", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 1, "fp": 3, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "bugbot": {"tp": 0, "fp": 2, "fn": 3}, "copilot": {"tp": 0, "fp": 6, "fn": 3}, "propel": {"tp": 0, "fp": 1, "fn": 3}, "augment": {"tp": 0, "fp": 7, "fn": 3}, "baz": {"tp": 0, "fp": 3, "fn": 3}, "coderabbit": {"tp": 0, "fp": 7, "fn": 3}, "greptile": {"tp": 0, "fp": 1, "fn": 3}, "kg": {"tp": 0, "fp": 2, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/2", "language": "Python", "pr_size": "medium", "domain": "data_processing", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 5, "fn": 3}, "claude": {"tp": 2, "fp": 5, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 2, "fp": 8, "fn": 1}, "bugbot": {"tp": 3, "fp": 1, "fn": 0}, "copilot": {"tp": 3, "fp": 8, "fn": 0}, "augment": {"tp": 3, "fp": 3, "fn": 0}, "propel": {"tp": 2, "fp": 3, "fn": 1}, "baz": {"tp": 3, "fp": 2, "fn": 0}, "coderabbit": {"tp": 0, "fp": 0, "fn": 3}, "greptile": {"tp": 2, "fp": 4, "fn": 1}, "kg": {"tp": 2, "fp": 2, "fn": 1}}}, {"url": "https://github.com/ai-code-review-evaluation/sentry-greptile/pull/3", "language": "Python", "pr_size": "medium", "domain": "caching", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 4, "fn": 3}, "claude": {"tp": 1, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 2, "fp": 4, "fn": 1}, "bugbot": {"tp": 0, "fp": 3, "fn": 3}, "copilot": {"tp": 1, "fp": 3, "fn": 2}, "augment": {"tp": 1, "fp": 2, "fn": 2}, "propel": {"tp": 1, "fp": 2, "fn": 2}, "baz": {"tp": 0, "fp": 7, "fn": 3}, "coderabbit": {"tp": 2, "fp": 4, "fn": 1}, "greptile": {"tp": 1, "fp": 3, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/grafana/grafana/pull/103633", "language": "Go", "pr_size": "small", "domain": "caching", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "claude": {"tp": 0, "fp": 6, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 1, "fp": 6, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 0, "fp": 1, "fn": 2}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/getsentry/sentry/pull/67876", "language": "Python", "pr_size": "small", "domain": "authentication", "change_type": "security_patch", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 3, "fn": 2}, "claude": {"tp": 1, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 1, "fp": 7, "fn": 2}, "bugbot": {"tp": 1, "fp": 2, "fn": 2}, "copilot": {"tp": 1, "fp": 4, "fn": 2}, "augment": {"tp": 1, "fp": 2, "fn": 2}, "propel": {"tp": 1, "fp": 2, "fn": 2}, "coderabbit": {"tp": 1, "fp": 2, "fn": 2}, "baz": {"tp": 1, "fp": 1, "fn": 2}, "greptile": {"tp": 1, "fp": 3, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/keycloak/keycloak/pull/32918", "language": "Java", "pr_size": "small", "domain": "caching", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 2}, "claude": {"tp": 0, "fp": 2, "fn": 2}, "graphite": {"tp": 1, "fp": 1, "fn": 1}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 1, "fp": 0, "fn": 1}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 1, "fn": 2}, "kg": {"tp": 1, "fp": 2, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/94942", "language": "Go", "pr_size": "small", "domain": "data_processing", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 2, "fn": 1}, "claude": {"tp": 2, "fp": 1, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 2, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 2, "fp": 12, "fn": 0}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "augment": {"tp": 1, "fp": 3, "fn": 1}, "baz": {"tp": 1, "fp": 1, "fn": 1}, "coderabbit": {"tp": 1, "fp": 2, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 2, "fp": 0, "fn": 0}}}, {"url": "https://github.com/grafana/grafana/pull/90939", "language": "Go", "pr_size": "small", "domain": "caching", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 0, "fn": 1}, "claude": {"tp": 1, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 1, "fp": 1, "fn": 1}, "bugbot": {"tp": 1, "fp": 0, "fn": 1}, "propel": {"tp": 1, "fp": 1, "fn": 1}, "augment": {"tp": 2, "fp": 0, "fn": 0}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 1, "fn": 1}, "greptile": {"tp": 1, "fp": 1, "fn": 1}, "kg": {"tp": 1, "fp": 1, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/80329", "language": "Go", "pr_size": "small", "domain": "logging", "change_type": "performance", "complexity": "simple", "difficulty": "obvious", "risk": "low", "context": "local", "concern": "maintainability", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 0}, "claude": {"tp": 1, "fp": 5, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 1, "fp": 5, "fn": 0}, "bugbot": {"tp": 1, "fp": 5, "fn": 0}, "copilot": {"tp": 1, "fp": 4, "fn": 0}, "propel": {"tp": 0, "fp": 3, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 0}, "baz": {"tp": 0, "fp": 1, "fn": 1}, "coderabbit": {"tp": 1, "fp": 6, "fn": 0}, "greptile": {"tp": 1, "fp": 2, "fn": 0}, "kg": {"tp": 0, "fp": 0, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/90045", "language": "Go", "pr_size": "medium", "domain": "logging", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 3, "fp": 5, "fn": 0}, "claude": {"tp": 3, "fp": 3, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 3, "fp": 4, "fn": 0}, "bugbot": {"tp": 3, "fp": 3, "fn": 0}, "copilot": {"tp": 3, "fp": 7, "fn": 0}, "propel": {"tp": 1, "fp": 2, "fn": 2}, "augment": {"tp": 3, "fp": 5, "fn": 0}, "baz": {"tp": 2, "fp": 1, "fn": 1}, "coderabbit": {"tp": 3, "fp": 3, "fn": 0}, "greptile": {"tp": 3, "fp": 1, "fn": 0}, "kg": {"tp": 2, "fp": 2, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/106778", "language": "Go", "pr_size": "medium", "domain": "UI", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 0, "fp": 9, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 5, "fn": 2}, "bugbot": {"tp": 2, "fp": 0, "fn": 0}, "copilot": {"tp": 1, "fp": 1, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 7, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 1, "fp": 1, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/107534", "language": "Go", "pr_size": "small", "domain": "testing", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "low", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 1}, "claude": {"tp": 0, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 0, "fp": 3, "fn": 1}, "bugbot": {"tp": 0, "fp": 2, "fn": 1}, "copilot": {"tp": 0, "fp": 4, "fn": 1}, "augment": {"tp": 0, "fp": 0, "fn": 1}, "propel": {"tp": 0, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 2, "fn": 1}, "coderabbit": {"tp": 0, "fp": 2, "fn": 1}, "greptile": {"tp": 0, "fp": 0, "fn": 1}, "kg": {"tp": 0, "fp": 2, "fn": 1}}}, {"url": "https://github.com/grafana/grafana/pull/79265", "language": "Go", "pr_size": "large", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 4}, "claude": {"tp": 1, "fp": 6, "fn": 4}, "graphite": {"tp": 0, "fp": 0, "fn": 5}, "qodo": {"tp": 2, "fp": 1, "fn": 3}, "copilot": {"tp": 3, "fp": 7, "fn": 2}, "bugbot": {"tp": 0, "fp": 2, "fn": 5}, "augment": {"tp": 0, "fp": 2, "fn": 5}, "propel": {"tp": 1, "fp": 1, "fn": 4}, "baz": {"tp": 0, "fp": 1, "fn": 5}, "coderabbit": {"tp": 4, "fp": 5, "fn": 1}, "greptile": {"tp": 1, "fp": 2, "fn": 4}, "kg": {"tp": 1, "fp": 0, "fn": 4}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/9", "language": "Ruby", "pr_size": "small", "domain": "configuration", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 0, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 1, "fn": 1}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 1, "fp": 4, "fn": 1}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 0, "fp": 3, "fn": 2}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 0, "fp": 4, "fn": 2}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/grafana/grafana/pull/76186", "language": "Go", "pr_size": "small", "domain": "logging", "change_type": "refactoring", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 3, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 3, "fn": 2}, "bugbot": {"tp": 0, "fp": 2, "fn": 2}, "copilot": {"tp": 0, "fp": 0, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 1, "fp": 1, "fn": 1}, "greptile": {"tp": 0, "fp": 0, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/10", "language": "Ruby", "pr_size": "large", "domain": "configuration", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 10, "fn": 3}, "claude": {"tp": 0, "fp": 3, "fn": 4}, "qodo": {"tp": 2, "fp": 4, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "bugbot": {"tp": 3, "fp": 4, "fn": 1}, "copilot": {"tp": 1, "fp": 4, "fn": 3}, "propel": {"tp": 3, "fp": 1, "fn": 1}, "augment": {"tp": 3, "fp": 2, "fn": 1}, "baz": {"tp": 2, "fp": 0, "fn": 2}, "coderabbit": {"tp": 2, "fp": 15, "fn": 2}, "greptile": {"tp": 2, "fp": 3, "fn": 2}, "kg": {"tp": 0, "fp": 2, "fn": 4}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/7", "language": "Ruby", "pr_size": "medium", "domain": "UI", "change_type": "bug_fix", "complexity": "simple", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 3, "fp": 3, "fn": 0}, "claude": {"tp": 3, "fp": 5, "fn": 0}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 0, "fp": 3, "fn": 3}, "bugbot": {"tp": 3, "fp": 1, "fn": 0}, "copilot": {"tp": 3, "fp": 1, "fn": 0}, "augment": {"tp": 3, "fp": 2, "fn": 0}, "propel": {"tp": 3, "fp": 1, "fn": 0}, "baz": {"tp": 3, "fp": 1, "fn": 0}, "coderabbit": {"tp": 0, "fp": 2, "fn": 3}, "greptile": {"tp": 2, "fp": 4, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/8", "language": "Ruby", "pr_size": "medium", "domain": "API", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 5, "fn": 2}, "claude": {"tp": 2, "fp": 5, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 1, "fp": 6, "fn": 2}, "bugbot": {"tp": 1, "fp": 2, "fn": 2}, "copilot": {"tp": 1, "fp": 9, "fn": 2}, "augment": {"tp": 2, "fp": 3, "fn": 1}, "propel": {"tp": 1, "fp": 4, "fn": 2}, "baz": {"tp": 1, "fp": 2, "fn": 2}, "coderabbit": {"tp": 2, "fp": 8, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3", "language": "Ruby", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 2}, "claude": {"tp": 1, "fp": 4, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 5, "fn": 1}, "copilot": {"tp": 1, "fp": 1, "fn": 1}, "bugbot": {"tp": 0, "fp": 2, "fn": 2}, "augment": {"tp": 1, "fp": 5, "fn": 1}, "propel": {"tp": 1, "fp": 1, "fn": 1}, "baz": {"tp": 0, "fp": 4, "fn": 2}, "coderabbit": {"tp": 1, "fp": 9, "fn": 1}, "greptile": {"tp": 1, "fp": 0, "fn": 1}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/5", "language": "Ruby", "pr_size": "small", "domain": "UI", "change_type": "performance", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 1, "fn": 2}, "claude": {"tp": 0, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 7, "fn": 2}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 0, "fp": 3, "fn": 2}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 0, "fp": 1, "fn": 2}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 0, "fp": 1, "fn": 2}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/6", "language": "Ruby", "pr_size": "small", "domain": "serialization", "change_type": "feature", "complexity": "simple", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 1}, "claude": {"tp": 0, "fp": 0, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 1}, "qodo": {"tp": 1, "fp": 5, "fn": 0}, "bugbot": {"tp": 0, "fp": 3, "fn": 1}, "copilot": {"tp": 1, "fp": 3, "fn": 0}, "augment": {"tp": 0, "fp": 3, "fn": 1}, "propel": {"tp": 0, "fp": 2, "fn": 1}, "baz": {"tp": 0, "fp": 3, "fn": 1}, "coderabbit": {"tp": 1, "fp": 5, "fn": 0}, "greptile": {"tp": 0, "fp": 3, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 1}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/4", "language": "Ruby", "pr_size": "large", "domain": "API", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 3, "fp": 7, "fn": 3}, "claude": {"tp": 2, "fp": 8, "fn": 4}, "graphite": {"tp": 0, "fp": 0, "fn": 6}, "qodo": {"tp": 2, "fp": 6, "fn": 4}, "bugbot": {"tp": 1, "fp": 4, "fn": 5}, "copilot": {"tp": 1, "fp": 5, "fn": 5}, "augment": {"tp": 2, "fp": 3, "fn": 4}, "propel": {"tp": 1, "fp": 1, "fn": 5}, "baz": {"tp": 1, "fp": 4, "fn": 5}, "coderabbit": {"tp": 3, "fp": 25, "fn": 3}, "greptile": {"tp": 2, "fp": 5, "fn": 4}, "kg": {"tp": 0, "fp": 0, "fn": 6}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/1", "language": "Ruby", "pr_size": "medium", "domain": "file_io", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 5, "fn": 1}, "claude": {"tp": 1, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 3}, "qodo": {"tp": 3, "fp": 4, "fn": 0}, "bugbot": {"tp": 2, "fp": 4, "fn": 1}, "copilot": {"tp": 2, "fp": 9, "fn": 1}, "augment": {"tp": 2, "fp": 5, "fn": 1}, "propel": {"tp": 2, "fp": 2, "fn": 1}, "baz": {"tp": 2, "fp": 1, "fn": 1}, "coderabbit": {"tp": 2, "fp": 5, "fn": 1}, "greptile": {"tp": 2, "fp": 2, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 3}}}, {"url": "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/2", "language": "Ruby", "pr_size": "medium", "domain": "UI", "change_type": "feature", "complexity": "moderate", "difficulty": "moderate", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 0, "fn": 0}, "claude": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 2, "fp": 3, "fn": 0}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 2, "fp": 4, "fn": 0}, "augment": {"tp": 1, "fp": 1, "fn": 1}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "baz": {"tp": 1, "fp": 1, "fn": 1}, "coderabbit": {"tp": 2, "fp": 7, "fn": 0}, "greptile": {"tp": 2, "fp": 1, "fn": 0}, "kg": {"tp": 1, "fp": 1, "fn": 1}}}, {"url": "https://github.com/calcom/cal.com/pull/22532", "language": "TypeScript", "pr_size": "medium", "domain": "caching", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 3, "fn": 1}, "claude": {"tp": 0, "fp": 1, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 6, "fn": 1}, "bugbot": {"tp": 0, "fp": 1, "fn": 2}, "copilot": {"tp": 2, "fp": 11, "fn": 0}, "augment": {"tp": 2, "fp": 4, "fn": 0}, "propel": {"tp": 1, "fp": 3, "fn": 1}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 1, "fp": 10, "fn": 1}, "greptile": {"tp": 1, "fp": 1, "fn": 1}, "kg": {"tp": 0, "fp": 0, "fn": 2}}}, {"url": "https://github.com/calcom/cal.com/pull/8330", "language": "TypeScript", "pr_size": "small", "domain": "scheduling", "change_type": "bug_fix", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 2, "fp": 5, "fn": 0}, "claude": {"tp": 2, "fp": 0, "fn": 0}, "graphite": {"tp": 2, "fp": 0, "fn": 0}, "qodo": {"tp": 2, "fp": 4, "fn": 0}, "bugbot": {"tp": 2, "fp": 1, "fn": 0}, "copilot": {"tp": 2, "fp": 4, "fn": 0}, "augment": {"tp": 2, "fp": 3, "fn": 0}, "propel": {"tp": 1, "fp": 2, "fn": 1}, "baz": {"tp": 2, "fp": 1, "fn": 0}, "coderabbit": {"tp": 2, "fp": 2, "fn": 0}, "greptile": {"tp": 2, "fp": 0, "fn": 0}, "kg": {"tp": 1, "fp": 2, "fn": 1}}}, {"url": "https://github.com/calcom/cal.com/pull/14943", "language": "TypeScript", "pr_size": "small", "domain": "scheduling", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 2, "fn": 2}, "claude": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 1, "fp": 0, "fn": 1}, "qodo": {"tp": 2, "fp": 1, "fn": 0}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 1, "fp": 4, "fn": 1}, "augment": {"tp": 2, "fp": 1, "fn": 0}, "propel": {"tp": 2, "fp": 1, "fn": 0}, "baz": {"tp": 1, "fp": 3, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 2, "fn": 1}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}, {"url": "https://github.com/calcom/cal.com/pull/22345", "language": "TypeScript", "pr_size": "small", "domain": "database", "change_type": "migration", "complexity": "moderate", "difficulty": "subtle", "risk": "medium", "context": "file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 5, "fn": 2}, "claude": {"tp": 0, "fp": 0, "fn": 2}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 0, "fp": 5, "fn": 2}, "bugbot": {"tp": 1, "fp": 1, "fn": 1}, "copilot": {"tp": 0, "fp": 5, "fn": 2}, "augment": {"tp": 1, "fp": 3, "fn": 1}, "propel": {"tp": 0, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 3, "fn": 2}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 0, "fp": 2, "fn": 2}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/calcom/cal.com/pull/11059", "language": "TypeScript", "pr_size": "large", "domain": "authentication", "change_type": "feature", "complexity": "complex", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 3, "fp": 3, "fn": 2}, "claude": {"tp": 3, "fp": 3, "fn": 2}, "graphite": {"tp": 1, "fp": 2, "fn": 4}, "qodo": {"tp": 3, "fp": 11, "fn": 2}, "bugbot": {"tp": 4, "fp": 4, "fn": 1}, "copilot": {"tp": 5, "fp": 13, "fn": 0}, "augment": {"tp": 5, "fp": 10, "fn": 0}, "propel": {"tp": 1, "fp": 2, "fn": 4}, "baz": {"tp": 4, "fp": 1, "fn": 1}, "coderabbit": {"tp": 5, "fp": 15, "fn": 0}, "greptile": {"tp": 3, "fp": 7, "fn": 2}, "kg": {"tp": 0, "fp": 0, "fn": 5}}}, {"url": "https://github.com/calcom/cal.com/pull/7232", "language": "TypeScript", "pr_size": "medium", "domain": "scheduling", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 0, "fp": 3, "fn": 2}, "claude": {"tp": 1, "fp": 3, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 3, "fn": 1}, "bugbot": {"tp": 1, "fp": 3, "fn": 1}, "copilot": {"tp": 2, "fp": 6, "fn": 0}, "augment": {"tp": 1, "fp": 2, "fn": 1}, "propel": {"tp": 0, "fp": 2, "fn": 2}, "baz": {"tp": 1, "fp": 2, "fn": 1}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 4, "fn": 1}, "kg": {"tp": 0, "fp": 1, "fn": 2}}}, {"url": "https://github.com/calcom/cal.com/pull/14740", "language": "TypeScript", "pr_size": "large", "domain": "scheduling", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 3, "fn": 4}, "claude": {"tp": 2, "fp": 0, "fn": 3}, "graphite": {"tp": 1, "fp": 1, "fn": 4}, "qodo": {"tp": 2, "fp": 3, "fn": 3}, "bugbot": {"tp": 3, "fp": 3, "fn": 2}, "copilot": {"tp": 3, "fp": 8, "fn": 2}, "augment": {"tp": 4, "fp": 3, "fn": 1}, "propel": {"tp": 4, "fp": 0, "fn": 1}, "baz": {"tp": 1, "fp": 1, "fn": 4}, "coderabbit": {"tp": 4, "fp": 7, "fn": 1}, "greptile": {"tp": 4, "fp": 2, "fn": 1}, "kg": {"tp": 2, "fp": 0, "fn": 3}}}, {"url": "https://github.com/calcom/cal.com/pull/10600", "language": "TypeScript", "pr_size": "medium", "domain": "authentication", "change_type": "feature", "complexity": "moderate", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "security", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 5, "fn": 3}, "claude": {"tp": 1, "fp": 12, "fn": 3}, "graphite": {"tp": 0, "fp": 0, "fn": 4}, "qodo": {"tp": 0, "fp": 5, "fn": 4}, "bugbot": {"tp": 1, "fp": 1, "fn": 3}, "copilot": {"tp": 1, "fp": 9, "fn": 3}, "augment": {"tp": 1, "fp": 4, "fn": 3}, "propel": {"tp": 1, "fp": 2, "fn": 3}, "baz": {"tp": 0, "fp": 1, "fn": 4}, "coderabbit": {"tp": 0, "fp": 0, "fn": 4}, "greptile": {"tp": 0, "fp": 4, "fn": 4}, "kg": {"tp": 0, "fp": 0, "fn": 4}}}, {"url": "https://github.com/calcom/cal.com/pull/10967", "language": "TypeScript", "pr_size": "large", "domain": "scheduling", "change_type": "bug_fix", "complexity": "complex", "difficulty": "subtle", "risk": "high", "context": "cross_file", "concern": "correctness", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 9, "fn": 4}, "claude": {"tp": 4, "fp": 3, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 5}, "qodo": {"tp": 0, "fp": 3, "fn": 5}, "bugbot": {"tp": 2, "fp": 4, "fn": 3}, "copilot": {"tp": 3, "fp": 8, "fn": 2}, "augment": {"tp": 2, "fp": 3, "fn": 3}, "propel": {"tp": 1, "fp": 0, "fn": 4}, "baz": {"tp": 0, "fp": 4, "fn": 5}, "coderabbit": {"tp": 0, "fp": 0, "fn": 5}, "greptile": {"tp": 2, "fp": 2, "fn": 3}, "kg": {"tp": 0, "fp": 0, "fn": 5}}}, {"url": "https://github.com/calcom/cal.com/pull/8087", "language": "TypeScript", "pr_size": "medium", "domain": "concurrency", "change_type": "refactoring", "complexity": "moderate", "difficulty": "subtle", "risk": "critical", "context": "cross_file", "concern": "reliability", "summary": "", "tool_metrics": {"gemini": {"tp": 1, "fp": 1, "fn": 1}, "claude": {"tp": 1, "fp": 1, "fn": 1}, "graphite": {"tp": 0, "fp": 0, "fn": 2}, "qodo": {"tp": 1, "fp": 2, "fn": 1}, "bugbot": {"tp": 1, "fp": 2, "fn": 1}, "copilot": {"tp": 1, "fp": 3, "fn": 1}, "augment": {"tp": 1, "fp": 4, "fn": 1}, "propel": {"tp": 0, "fp": 0, "fn": 2}, "baz": {"tp": 0, "fp": 1, "fn": 2}, "coderabbit": {"tp": 0, "fp": 0, "fn": 2}, "greptile": {"tp": 1, "fp": 3, "fn": 1}, "kg": {"tp": 1, "fp": 0, "fn": 1}}}], "tools": ["augment", "baz", "bugbot", "claude", "coderabbit", "copilot", "gemini", "graphite", "greptile", "kg", "propel", "qodo"], "dimensions": {"language": ["Go", "Java", "Python", "Ruby", "TypeScript"], "pr_size": ["small", "medium", "large"], "domain": ["API", "UI", "authentication", "caching", "concurrency", "configuration", "data_processing", "database", "file_io", "logging", "scheduling", "serialization", "testing"], "change_type": ["bug_fix", "feature", "migration", "performance", "refactoring", "security_patch"], "complexity": ["simple", "moderate", "complex"], "difficulty": ["obvious", "moderate", "subtle", "very_subtle"], "risk": ["low", "medium", "high", "critical"], "context": ["local", "file", "cross_file", "system"], "concern": ["correctness", "maintainability", "reliability", "security"]}, "overall_metrics": {"qodo": {"precision": 23.4, "recall": 42.3, "f1": 30.1, "tp": 58, "fp": 190, "fn": 79, "num_prs": 50}, "graphite": {"precision": 66.7, "recall": 8.8, "f1": 15.5, "tp": 12, "fp": 6, "fn": 125, "num_prs": 50}, "claude": {"precision": 30.5, "recall": 37.2, "f1": 33.6, "tp": 51, "fp": 116, "fn": 86, "num_prs": 50}, "bugbot": {"precision": 38.3, "recall": 43.1, "f1": 40.5, "tp": 59, "fp": 95, "fn": 78, "num_prs": 50}, "propel": {"precision": 38.9, "recall": 37.2, "f1": 38.1, "tp": 51, "fp": 80, "fn": 86, "num_prs": 50}, "kg": {"precision": 48.9, "recall": 16.8, "f1": 25.0, "tp": 23, "fp": 24, "fn": 114, "num_prs": 50}, "coderabbit": {"precision": 21.2, "recall": 41.6, "f1": 28.1, "tp": 57, "fp": 212, "fn": 80, "num_prs": 50}, "copilot": {"precision": 23.5, "recall": 53.3, "f1": 32.6, "tp": 73, "fp": 238, "fn": 64, "num_prs": 50}, "baz": {"precision": 34.6, "recall": 27.0, "f1": 30.3, "tp": 37, "fp": 70, "fn": 100, "num_prs": 50}, "greptile": {"precision": 33.8, "recall": 36.5, "f1": 35.1, "tp": 50, "fp": 98, "fn": 87, "num_prs": 50}, "augment": {"precision": 37.3, "recall": 59.1, "f1": 45.8, "tp": 81, "fp": 136, "fn": 56, "num_prs": 50}, "gemini": {"precision": 24.6, "recall": 32.8, "f1": 28.1, "tp": 45, "fp": 138, "fn": 92, "num_prs": 50}}}};
+        const toolDisplayNames = {"graphite": "Graphite", "qodo": "Qodo", "gemini": "Gemini", "claude": "Claude Code", "augment": "Augment", "bugbot": "Cursor Bugbot", "coderabbit": "CodeRabbit", "propel": "Propel", "copilot": "GitHub Copilot", "baz": "Baz", "greptile": "Greptile", "kg": "KG"};
+        const toolColors = {"graphite": "#6366f1", "qodo": "#8b5cf6", "gemini": "#06b6d4", "claude": "#f59e0b", "augment": "#10b981", "bugbot": "#3b82f6", "coderabbit": "#ec4899", "propel": "#14b8a6", "copilot": "#6b7280", "baz": "#f97316", "greptile": "#22c55e", "kg": "#a855f7"};
+        const predefinedFilters = [{"id": "high_precision", "label": "Highest Precision", "filters": {}, "sort": "precision", "description": "Tools ranked by precision - fewer false positives, more reliable findings", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "graphite", "best_score": 75.0}, {"id": "go_small", "label": "Best for Small Go PRs", "filters": {"language": ["Go"], "pr_size": ["small"]}, "description": "Go codebases with concurrency patterns. Small PRs with 1-2 files, easier to review thoroughly", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 72.0}, {"id": "domain_ui", "label": "Best for Ui", "filters": {"domain": ["UI"]}, "description": "User interface and frontend.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "bugbot", "best_score": 66.7}, {"id": "tool_claude_language_typescript_domain_scheduling", "label": "Typescript + Scheduling", "filters": {"language": ["TypeScript"], "domain": ["scheduling"]}, "description": "TypeScript codebases with frontend patterns. Task scheduling.", "best_model": "openai_gpt-5.2", "best_tool": "claude", "best_score": 60.6}, {"id": "domain_scheduling", "label": "Best for Scheduling", "filters": {"domain": ["scheduling"]}, "description": "Task scheduling.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "propel", "best_score": 58.1}, {"id": "ruby_medium", "label": "Best for Medium Ruby PRs", "filters": {"language": ["Ruby"], "pr_size": ["medium"]}, "description": "Ruby codebases with Rails patterns. Medium PRs with 3-5 files, typical feature development", "best_model": "openai_gpt-5.2", "best_tool": "greptile", "best_score": 57.1}, {"id": "tool_qodo_risk_high_context_file", "label": "High Risk + File Context", "filters": {"risk": ["high"], "context": ["file"]}, "description": "Significant impact, potential data loss. Requires full file understanding.", "best_model": "openai_gpt-5.2", "best_tool": "qodo", "best_score": 57.1}, {"id": "tool_copilot_language_java_difficulty_subtle", "label": "Java + Subtle Bugs", "filters": {"language": ["Java"], "difficulty": ["subtle"]}, "description": "Java codebases with OOP patterns. Non-obvious, needs domain knowledge.", "best_model": "openai_gpt-5.2", "best_tool": "copilot", "best_score": 56.3}, {"id": "tool_gemini_domain_authentication_difficulty_subtle", "label": "Authentication + Subtle Bugs", "filters": {"domain": ["authentication"], "difficulty": ["subtle"]}, "description": "Auth and access control. Non-obvious, needs domain knowledge.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "gemini", "best_score": 49.1}, {"id": "tool_coderabbit_language_go_risk_high", "label": "Go + High Risk", "filters": {"language": ["Go"], "risk": ["high"]}, "description": "Go codebases with concurrency patterns. Significant impact, potential data loss.", "best_model": "openai_gpt-5.2", "best_tool": "coderabbit", "best_score": 46.7}, {"id": "domain_authentication", "label": "Best for Authentication", "filters": {"domain": ["authentication"]}, "description": "Auth and access control.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "baz", "best_score": 46.4}, {"id": "tool_kg_language_go_complexity_moderate", "label": "Go + Moderate Code", "filters": {"language": ["Go"], "complexity": ["moderate"]}, "description": "Go codebases with concurrency patterns. Some abstraction.", "best_model": "openai_gpt-5.2", "best_tool": "kg", "best_score": 43.8}, {"id": "change_type_performance", "label": "Best for Performance Optimization", "filters": {"change_type": ["performance"]}, "description": "Performance optimization changes", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 70.3}, {"id": "change_type_bug_fix", "label": "Best for Bug Fixes", "filters": {"change_type": ["bug_fix"]}, "description": "Bug fixes and issue resolution", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 65.0}, {"id": "domain_caching", "label": "Best for Caching", "filters": {"domain": ["caching"]}, "description": "Cache and memoization.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 64.0}, {"id": "complexity_complex", "label": "Best for Complex Code", "filters": {"complexity": ["complex"]}, "description": "Deep logic and dependencies.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 63.8}, {"id": "complex_subtle", "label": "Complex & Subtle", "filters": {"complexity": ["complex"], "difficulty": ["subtle", "very_subtle"]}, "description": "Deep logic and dependencies. Non-obvious, needs domain knowledge.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 63.8}, {"id": "high_recall", "label": "Highest Recall", "filters": {}, "sort": "recall", "description": "Tools ranked by recall - catches more issues, may have more noise", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 62.8}, {"id": "pr_size_small", "label": "Best for Small PRs", "filters": {"pr_size": ["small"]}, "description": "Small PRs with 1-2 files, easier to review thoroughly", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 62.7}, {"id": "risk_high", "label": "Best for High Risk", "filters": {"risk": ["high"]}, "description": "Significant impact, potential data loss.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 60.0}, {"id": "domain_concurrency", "label": "Best for Concurrency", "filters": {"domain": ["concurrency"]}, "description": "Threading and async operations.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 58.8}, {"id": "language_go", "label": "Best for Go", "filters": {"language": ["Go"]}, "description": "Go codebases with concurrency patterns.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 58.3}, {"id": "risk_critical", "label": "Best for Critical Risk", "filters": {"risk": ["critical"]}, "description": "Critical security or data corruption risk.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 57.7}, {"id": "pr_size_large", "label": "Best for Large PRs", "filters": {"pr_size": ["large"]}, "description": "Large PRs with 6+ files, complex changes requiring careful review", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 57.1}, {"id": "concern_correctness", "label": "Best for Correctness", "filters": {"concern": ["correctness"]}, "description": "Logical correctness and expected behavior", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 55.6}, {"id": "language_python", "label": "Best for Python", "filters": {"language": ["Python"]}, "description": "Python codebases with dynamic typing.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 55.1}, {"id": "language_java", "label": "Best for Java", "filters": {"language": ["Java"]}, "description": "Java codebases with OOP patterns.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 54.9}, {"id": "difficulty_subtle", "label": "Best for Subtle Bugs", "filters": {"difficulty": ["subtle"]}, "description": "Non-obvious, needs domain knowledge.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 54.3}, {"id": "context_cross_file", "label": "Best for Cross-File", "filters": {"context": ["cross_file"]}, "description": "Spans multiple files.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 54.2}, {"id": "high_f1", "label": "Highest F1", "filters": {}, "sort": "f1", "description": "Tools ranked by F1 score - balanced precision and recall", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 53.8}, {"id": "language_ruby", "label": "Best for Ruby", "filters": {"language": ["Ruby"]}, "description": "Ruby codebases with Rails patterns.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 52.9}, {"id": "python_medium", "label": "Best for Medium Python PRs", "filters": {"language": ["Python"], "pr_size": ["medium"]}, "description": "Python codebases with dynamic typing. Medium PRs with 3-5 files, typical feature development", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 52.9}, {"id": "context_file", "label": "Best for File Context", "filters": {"context": ["file"]}, "description": "Requires full file understanding.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 51.9}, {"id": "change_type_feature", "label": "Best for Features", "filters": {"change_type": ["feature"]}, "description": "New feature implementation", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 50.9}, {"id": "language_typescript", "label": "Best for Typescript", "filters": {"language": ["TypeScript"]}, "description": "TypeScript codebases with frontend patterns.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 50.0}, {"id": "difficulty_moderate", "label": "Best for Moderate Bugs", "filters": {"difficulty": ["moderate"]}, "description": "Requires careful reading.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "greptile", "best_score": 50.0}, {"id": "java_medium", "label": "Best for Medium Java PRs", "filters": {"language": ["Java"], "pr_size": ["medium"]}, "description": "Java codebases with OOP patterns. Medium PRs with 3-5 files, typical feature development", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "greptile", "best_score": 50.0}, {"id": "complexity_moderate", "label": "Best for Moderate Code", "filters": {"complexity": ["moderate"]}, "description": "Some abstraction.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 49.8}, {"id": "pr_size_medium", "label": "Best for Medium PRs", "filters": {"pr_size": ["medium"]}, "description": "Medium PRs with 3-5 files, typical feature development", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "bugbot", "best_score": 49.6}, {"id": "high_risk_auth", "label": "High Risk Auth", "filters": {"risk": ["high", "critical"], "domain": ["authentication"]}, "description": "Significant impact, potential data loss. Auth and access control.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "bugbot", "best_score": 49.1}, {"id": "concern_security", "label": "Best for Security", "filters": {"concern": ["security"]}, "description": "Security vulnerabilities and attack vectors", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 47.6}, {"id": "security_critical", "label": "Security Critical", "filters": {"concern": ["security"], "risk": ["high", "critical"]}, "description": "Security vulnerabilities and attack vectors Significant impact, potential data loss.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 47.6}, {"id": "risk_medium", "label": "Best for Medium Risk", "filters": {"risk": ["medium"]}, "description": "Moderate user impact.", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 46.3}, {"id": "concern_reliability", "label": "Best for Reliability", "filters": {"concern": ["reliability"]}, "description": "Error handling and system stability", "best_model": "anthropic_claude-opus-4-5-20251101", "best_tool": "augment", "best_score": 44.4}];
+
+        let currentModel = 'anthropic_claude-opus-4-5-20251101';
+        let currentFilters = {
+            language: [], pr_size: [], domain: [],
+            complexity: [], difficulty: [], risk: [],
+            context: [], concern: [], change_type: []
+        };
+        let currentSort = { column: 'f1', direction: 'desc' };
+        let activePredefinedFilter = null;
+
+        function getCurrentData() {
+            return allModelsData[currentModel];
+        }
+
+        function resetFilters() {
+            return {
+                language: [], pr_size: [], domain: [],
+                complexity: [], difficulty: [], risk: [],
+                context: [], concern: [], change_type: []
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            updateChart();
+            updateTable();
+        });
+
+        function changeModel(modelName) {
+            currentModel = modelName;
+            updateChart();
+            updateTable();
+        }
+
+        function toggleFilter(dimension, value) {
+            if (!currentFilters[dimension]) currentFilters[dimension] = [];
+            const index = currentFilters[dimension].indexOf(value);
+            if (index > -1) {
+                currentFilters[dimension].splice(index, 1);
+            } else {
+                currentFilters[dimension].push(value);
+            }
+            activePredefinedFilter = null;
+            updatePredefinedButtons();
+            updateChart();
+            updateTable();
+            updateTitle();
+        }
+
+        function applyPredefinedFilter(filterId) {
+            const filter = predefinedFilters.find(f => f.id === filterId);
+            if (!filter) return;
+
+            // Switch to the best model for this filter
+            if (filter.best_model && filter.best_model !== currentModel) {
+                currentModel = filter.best_model;
+                document.getElementById('model-select').value = currentModel;
+            }
+
+            document.querySelectorAll('.filter-options input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+
+            currentFilters = resetFilters();
+
+            if (filter.filters) {
+                for (const [dim, values] of Object.entries(filter.filters)) {
+                    currentFilters[dim] = [...values];
+                    values.forEach(v => {
+                        const checkbox = document.getElementById(`filter-${dim}-${v}`);
+                        if (checkbox) checkbox.checked = true;
+                    });
+                }
+            }
+
+            if (filter.sort) {
+                currentSort = { column: filter.sort, direction: 'desc' };
+            }
+
+            activePredefinedFilter = filterId;
+            updatePredefinedButtons();
+            updateChart();
+            updateTable();
+            updateTitle();
+        }
+
+        function updatePredefinedButtons() {
+            document.querySelectorAll('.predefined-filter').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            if (activePredefinedFilter) {
+                const btn = document.querySelector(`[data-filter-id="${activePredefinedFilter}"]`);
+                if (btn) btn.classList.add('active');
+            }
+        }
+
+        function updateTitle() {
+            const titleEl = document.getElementById('results-title');
+            const descEl = document.getElementById('results-description');
+            let title = 'All Tools';
+            let description = '';
+
+            if (activePredefinedFilter) {
+                const filter = predefinedFilters.find(f => f.id === activePredefinedFilter);
+                if (filter) {
+                    title = filter.label;
+                    description = filter.description || '';
+                }
+            } else {
+                const activeFilters = [];
+                if (currentFilters.language.length) activeFilters.push(currentFilters.language.join(', '));
+                if (currentFilters.pr_size.length) activeFilters.push(currentFilters.pr_size.map(s => s.charAt(0).toUpperCase() + s.slice(1) + ' PRs').join(', '));
+                if (currentFilters.domain.length) activeFilters.push(currentFilters.domain.join(', '));
+                if (activeFilters.length) title = activeFilters.join(' | ');
+            }
+
+            titleEl.innerHTML = title + ' <span class="legend-dot" style="background: linear-gradient(90deg, #6366f1 50%, #ec4899 50%);"></span>';
+            descEl.textContent = description;
+        }
+
+        function getFilteredMetrics() {
+            const data = getCurrentData();
+            const hasFilters = Object.values(currentFilters).some(arr => arr.length > 0);
+
+            if (!hasFilters) {
+                return data.overall_metrics;
+            }
+
+            const filteredPRs = data.prs.filter(pr => {
+                if (currentFilters.language.length && !currentFilters.language.includes(pr.language)) return false;
+                if (currentFilters.pr_size.length && !currentFilters.pr_size.includes(pr.pr_size)) return false;
+                if (currentFilters.domain.length && !currentFilters.domain.includes(pr.domain)) return false;
+                if (currentFilters.complexity.length && !currentFilters.complexity.includes(pr.complexity)) return false;
+                if (currentFilters.difficulty.length && !currentFilters.difficulty.includes(pr.difficulty)) return false;
+                if (currentFilters.risk.length && !currentFilters.risk.includes(pr.risk)) return false;
+                if (currentFilters.context.length && !currentFilters.context.includes(pr.context)) return false;
+                if (currentFilters.concern.length && !currentFilters.concern.includes(pr.concern)) return false;
+                if (currentFilters.change_type.length && !currentFilters.change_type.includes(pr.change_type)) return false;
+                return true;
+            });
+
+            const metrics = {};
+            for (const tool of data.tools) {
+                let tp = 0, fp = 0, fn = 0, numPrs = 0;
+                for (const pr of filteredPRs) {
+                    if (pr.tool_metrics[tool]) {
+                        tp += pr.tool_metrics[tool].tp;
+                        fp += pr.tool_metrics[tool].fp;
+                        fn += pr.tool_metrics[tool].fn;
+                        numPrs++;
+                    }
+                }
+
+                const precision = (tp + fp) > 0 ? (tp / (tp + fp)) * 100 : 0;
+                const recall = (tp + fn) > 0 ? (tp / (tp + fn)) * 100 : 0;
+                const f1 = (precision + recall) > 0 ? (2 * precision * recall / (precision + recall)) : 0;
+
+                metrics[tool] = {
+                    precision: Math.round(precision * 10) / 10,
+                    recall: Math.round(recall * 10) / 10,
+                    f1: Math.round(f1 * 10) / 10,
+                    tp: tp,
+                    fp: fp,
+                    fn: fn,
+                    num_prs: numPrs
+                };
+            }
+
+            return metrics;
+        }
+
+        function updateChart() {
+            const data = getCurrentData();
+            const metrics = getFilteredMetrics();
+
+            const x = [], y = [], text = [], colors = [];
+
+            for (const tool of data.tools) {
+                const m = metrics[tool];
+                if (m && m.num_prs > 0) {
+                    x.push(m.precision);
+                    y.push(m.recall);
+                    text.push(toolDisplayNames[tool] || tool);
+                    colors.push(toolColors[tool] || '#666');
+                }
+            }
+
+            const trace = {
+                x: x,
+                y: y,
+                text: text,
+                mode: 'markers+text',
+                type: 'scatter',
+                textposition: 'top right',
+                textfont: { size: 12, color: '#666' },
+                marker: {
+                    size: 14,
+                    color: colors,
+                    line: { color: '#fff', width: 2 }
+                },
+                hovertemplate: '<b>%{text}</b><br>Precision: %{x:.1f}%<br>Recall: %{y:.1f}%<extra></extra>'
+            };
+
+            const layout = {
+                xaxis: {
+                    title: { text: 'Precision (%)', font: { size: 12 } },
+                    range: [0, Math.max(...x, 10) + 10],
+                    gridcolor: '#f0f0f0',
+                    zeroline: false
+                },
+                yaxis: {
+                    title: { text: 'Recall (%)', font: { size: 12 } },
+                    range: [0, Math.max(...y, 10) + 10],
+                    gridcolor: '#f0f0f0',
+                    zeroline: false
+                },
+                margin: { l: 60, r: 40, t: 20, b: 60 },
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: '#fff',
+                showlegend: false,
+                hovermode: 'closest'
+            };
+
+            Plotly.newPlot('scatter-plot', [trace], layout, { responsive: true });
+        }
+
+        function updateTable() {
+            const data = getCurrentData();
+            const metrics = getFilteredMetrics();
+            const tbody = document.getElementById('table-body');
+
+            let rows = Object.entries(metrics).map(([tool, m]) => ({
+                tool: tool,
+                displayName: toolDisplayNames[tool] || tool,
+                color: toolColors[tool] || '#666',
+                ...m
+            }));
+
+            rows.sort((a, b) => {
+                const aVal = a[currentSort.column];
+                const bVal = b[currentSort.column];
+                if (currentSort.column === 'tool') {
+                    return currentSort.direction === 'asc'
+                        ? a.displayName.localeCompare(b.displayName)
+                        : b.displayName.localeCompare(a.displayName);
+                }
+                return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
+            });
+
+            tbody.innerHTML = rows.map(row => `
+                <tr>
+                    <td>
+                        <div class="tool-cell">
+                            <div class="tool-icon" style="background: ${row.color}">${row.displayName.charAt(0)}</div>
+                            ${row.displayName}
+                        </div>
+                    </td>
+                    <td>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill">
+                                <div class="metric-bar-value" style="width: ${row.precision}%"></div>
+                            </div>
+                            <span class="metric-value">${row.precision.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill">
+                                <div class="metric-bar-value" style="width: ${row.recall}%"></div>
+                            </div>
+                            <span class="metric-value">${row.recall.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="metric-bar">
+                            <div class="metric-bar-fill">
+                                <div class="metric-bar-value" style="width: ${row.f1}%"></div>
+                            </div>
+                            <span class="metric-value">${row.f1.toFixed(1)}%</span>
+                        </div>
+                    </td>
+                    <td>${row.tp}</td>
+                    <td>${row.num_prs}</td>
+                </tr>
+            `).join('');
+        }
+
+        function sortTable(column) {
+            if (currentSort.column === column) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.column = column;
+                currentSort.direction = 'desc';
+            }
+            updateTable();
+        }
+
+        function toggleMore(elementId) {
+            document.getElementById(elementId).classList.toggle('hidden');
+        }
+
+        function shareResults() {
+            const params = new URLSearchParams();
+            params.set('model', currentModel);
+            for (const [dim, values] of Object.entries(currentFilters)) {
+                if (values.length) params.set(dim, values.join(','));
+            }
+
+            const url = window.location.href.split('?')[0] + '?' + params.toString();
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+    </script>
+</body>
+</html>
