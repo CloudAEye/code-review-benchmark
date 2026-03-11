@@ -144,6 +144,36 @@
               "tp": 1,
               "fp": 7,
               "fn": 3
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 4
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
             }
           }
         },
@@ -289,6 +319,36 @@
               "tp": 2,
               "fp": 7,
               "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "linearb": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
             }
           }
         },
@@ -434,6 +494,36 @@
               "tp": 2,
               "fp": 7,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
             }
           }
         },
@@ -578,6 +668,36 @@
             "kodus": {
               "tp": 0,
               "fp": 6,
+              "fn": 1
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -724,6 +844,36 @@
               "tp": 0,
               "fp": 9,
               "fn": 3
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -869,6 +1019,36 @@
               "tp": 2,
               "fp": 13,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -1013,6 +1193,36 @@
             "kodus": {
               "tp": 0,
               "fp": 7,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -1159,6 +1369,36 @@
               "tp": 1,
               "fp": 4,
               "fn": 1
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -1304,6 +1544,36 @@
               "tp": 2,
               "fp": 6,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -1449,6 +1719,36 @@
               "tp": 3,
               "fp": 7,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
             }
           }
         },
@@ -1594,6 +1894,36 @@
               "tp": 1,
               "fp": 24,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 2,
+              "fp": 1,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -1739,6 +2069,36 @@
               "tp": 2,
               "fp": 6,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 0,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
             }
           }
         },
@@ -1884,6 +2244,36 @@
               "tp": 1,
               "fp": 4,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -2029,6 +2419,36 @@
               "tp": 1,
               "fp": 6,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -2174,6 +2594,36 @@
               "tp": 1,
               "fp": 6,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -2319,6 +2769,36 @@
               "tp": 1,
               "fp": 6,
               "fn": 3
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
             }
           }
         },
@@ -2464,6 +2944,36 @@
               "tp": 1,
               "fp": 7,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -2609,6 +3119,36 @@
               "tp": 2,
               "fp": 6,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -2754,6 +3294,36 @@
               "tp": 1,
               "fp": 8,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 1,
+              "fp": 4,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -2899,6 +3469,36 @@
               "tp": 1,
               "fp": 6,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
             }
           }
         },
@@ -3043,6 +3643,36 @@
             "kodus": {
               "tp": 0,
               "fp": 6,
+              "fn": 3
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
               "fn": 3
             }
           }
@@ -3189,6 +3819,36 @@
               "tp": 0,
               "fp": 4,
               "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -3334,6 +3994,36 @@
               "tp": 2,
               "fp": 4,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -3478,6 +4168,36 @@
             "kodus": {
               "tp": 0,
               "fp": 4,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -3624,6 +4344,36 @@
               "tp": 0,
               "fp": 6,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -3769,6 +4519,36 @@
               "tp": 2,
               "fp": 8,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -3914,6 +4694,36 @@
               "tp": 1,
               "fp": 8,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -4058,6 +4868,36 @@
             "kodus": {
               "tp": 0,
               "fp": 7,
+              "fn": 1
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 1
             }
           }
@@ -4204,6 +5044,36 @@
               "tp": 1,
               "fp": 8,
               "fn": 4
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 5
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
             }
           }
         },
@@ -4348,6 +5218,36 @@
             "kodus": {
               "tp": 0,
               "fp": 5,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -4494,6 +5394,36 @@
               "tp": 0,
               "fp": 8,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -4639,6 +5569,36 @@
               "tp": 3,
               "fp": 29,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 4
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
             }
           }
         },
@@ -4784,6 +5744,36 @@
               "tp": 1,
               "fp": 4,
               "fn": 2
+            },
+            "claude-code": {
+              "tp": 3,
+              "fp": 1,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -4929,6 +5919,36 @@
               "tp": 3,
               "fp": 11,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -5069,6 +6089,36 @@
               "tp": 2,
               "fp": 10,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -5213,6 +6263,36 @@
             "kodus": {
               "tp": 0,
               "fp": 4,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -5359,6 +6439,36 @@
               "tp": 0,
               "fp": 5,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 1
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 1
             }
           }
         },
@@ -5504,6 +6614,36 @@
               "tp": 3,
               "fp": 20,
               "fn": 3
+            },
+            "claude-code": {
+              "tp": 3,
+              "fp": 2,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 6
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 6
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 6
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 6
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 6
             }
           }
         },
@@ -5649,6 +6789,36 @@
               "tp": 2,
               "fp": 8,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 3,
+              "fp": 0,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 3
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 3
             }
           }
         },
@@ -5794,6 +6964,36 @@
               "tp": 1,
               "fp": 9,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 3,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -5939,6 +7139,36 @@
               "tp": 2,
               "fp": 7,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -6084,6 +7314,36 @@
               "tp": 2,
               "fp": 7,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 0
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -6229,6 +7489,36 @@
               "tp": 1,
               "fp": 5,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 0,
+              "fp": 2,
+              "fn": 2
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -6373,6 +7663,36 @@
             "kodus": {
               "tp": 0,
               "fp": 5,
+              "fn": 2
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 2
             }
           }
@@ -6519,6 +7839,36 @@
               "tp": 4,
               "fp": 8,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 3,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
             }
           }
         },
@@ -6664,6 +8014,36 @@
               "tp": 2,
               "fp": 8,
               "fn": 0
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 2,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         },
@@ -6809,6 +8189,36 @@
               "tp": 2,
               "fp": 11,
               "fn": 3
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 1,
+              "fn": 4
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
             }
           }
         },
@@ -6953,6 +8363,36 @@
             "kodus": {
               "tp": 0,
               "fp": 12,
+              "fn": 4
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 3,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 4
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 4
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
               "fn": 4
             }
           }
@@ -7099,6 +8539,36 @@
               "tp": 4,
               "fp": 9,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 2,
+              "fp": 2,
+              "fn": 3
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 5
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 5
             }
           }
         },
@@ -7244,6 +8714,36 @@
               "tp": 1,
               "fp": 7,
               "fn": 1
+            },
+            "claude-code": {
+              "tp": 1,
+              "fp": 0,
+              "fn": 1
+            },
+            "vercel": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "sentry": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "bito": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
+            },
+            "linearb": {
+              "tp": 0,
+              "fp": 1,
+              "fn": 2
+            },
+            "macroscope": {
+              "tp": 0,
+              "fp": 0,
+              "fn": 2
             }
           }
         }
@@ -7251,8 +8751,10 @@
       "tools": [
         "augment",
         "baz",
+        "bito",
         "bugbot",
         "claude",
+        "claude-code",
         "codeant",
         "coderabbit",
         "copilot",
@@ -7265,6 +8767,8 @@
         "greptile-v4",
         "kg",
         "kodus",
+        "linearb",
+        "macroscope",
         "mesa",
         "mra-a",
         "mra-b",
@@ -7274,7 +8778,9 @@
         "propel",
         "qodo",
         "qodo-v2",
-        "sourcery"
+        "sentry",
+        "sourcery",
+        "vercel"
       ],
       "dimensions": {
         "language": [
@@ -7343,103 +8849,22 @@
         ]
       },
       "overall_metrics": {
-        "graphite": {
-          "precision": 75.0,
-          "recall": 8.8,
-          "f1": 15.7,
-          "tp": 12,
-          "fp": 4,
-          "fn": 125,
+        "bugbot": {
+          "precision": 46.2,
+          "recall": 43.8,
+          "f1": 44.9,
+          "tp": 60,
+          "fp": 70,
+          "fn": 77,
           "num_prs": 50
         },
-        "coderabbit": {
-          "precision": 23.9,
-          "recall": 39.4,
-          "f1": 29.8,
-          "tp": 54,
-          "fp": 172,
-          "fn": 83,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 46.9,
-          "recall": 16.8,
-          "f1": 24.7,
-          "tp": 23,
-          "fp": 26,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 46.0,
-          "recall": 38.0,
-          "f1": 41.6,
-          "tp": 52,
-          "fp": 61,
-          "fn": 85,
-          "num_prs": 50
-        },
-        "devin": {
-          "precision": 50.5,
-          "recall": 37.2,
-          "f1": 42.9,
-          "tp": 51,
-          "fp": 50,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "gemini": {
-          "precision": 29.8,
-          "recall": 37.2,
-          "f1": 33.1,
-          "tp": 51,
-          "fp": 120,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "mra-a": {
-          "precision": 78.6,
-          "recall": 40.7,
-          "f1": 53.7,
-          "tp": 55,
-          "fp": 15,
-          "fn": 80,
-          "num_prs": 49
-        },
-        "mra-b": {
-          "precision": 76.1,
-          "recall": 37.2,
-          "f1": 50.0,
-          "tp": 51,
-          "fp": 16,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "sourcery": {
-          "precision": 26.2,
-          "recall": 54.7,
-          "f1": 35.5,
-          "tp": 75,
-          "fp": 211,
-          "fn": 62,
-          "num_prs": 50
-        },
-        "greptile-v4": {
-          "precision": 31.6,
-          "recall": 56.9,
-          "f1": 40.6,
-          "tp": 78,
-          "fp": 169,
-          "fn": 59,
-          "num_prs": 50
-        },
-        "copilot": {
-          "precision": 26.6,
-          "recall": 53.3,
-          "f1": 35.5,
-          "tp": 73,
-          "fp": 201,
-          "fn": 64,
+        "vercel": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0,
+          "tp": 0,
+          "fp": 3,
+          "fn": 137,
           "num_prs": 50
         },
         "qodo-v2": {
@@ -7451,31 +8876,22 @@
           "fn": 62,
           "num_prs": 50
         },
-        "mra-ultra": {
-          "precision": 75.8,
-          "recall": 36.5,
-          "f1": 49.3,
-          "tp": 50,
-          "fp": 16,
-          "fn": 87,
+        "claude-code": {
+          "precision": 37.3,
+          "recall": 40.9,
+          "f1": 39.0,
+          "tp": 56,
+          "fp": 94,
+          "fn": 81,
           "num_prs": 50
         },
-        "greptile": {
-          "precision": 38.4,
-          "recall": 38.7,
-          "f1": 38.5,
-          "tp": 53,
-          "fp": 85,
-          "fn": 84,
-          "num_prs": 50
-        },
-        "kodus": {
-          "precision": 13.8,
-          "recall": 46.7,
-          "f1": 21.3,
-          "tp": 64,
-          "fp": 399,
-          "fn": 73,
+        "graphite": {
+          "precision": 75.0,
+          "recall": 8.8,
+          "f1": 15.7,
+          "tp": 12,
+          "fp": 4,
+          "fn": 125,
           "num_prs": 50
         },
         "augment": {
@@ -7487,6 +8903,60 @@
           "fn": 51,
           "num_prs": 50
         },
+        "coderabbit": {
+          "precision": 23.9,
+          "recall": 39.4,
+          "f1": 29.8,
+          "tp": 54,
+          "fp": 172,
+          "fn": 83,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 44.0,
+          "recall": 29.2,
+          "f1": 35.1,
+          "tp": 40,
+          "fp": 51,
+          "fn": 97,
+          "num_prs": 50
+        },
+        "mra-ultra": {
+          "precision": 75.8,
+          "recall": 36.5,
+          "f1": 49.3,
+          "tp": 50,
+          "fp": 16,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "cubic-dev": {
+          "precision": 20.5,
+          "recall": 76.6,
+          "f1": 32.4,
+          "tp": 105,
+          "fp": 406,
+          "fn": 32,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 29.8,
+          "recall": 37.2,
+          "f1": 33.1,
+          "tp": 51,
+          "fp": 120,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "mra-max": {
+          "precision": 67.2,
+          "recall": 31.4,
+          "f1": 42.8,
+          "tp": 43,
+          "fp": 21,
+          "fn": 94,
+          "num_prs": 50
+        },
         "entelligence": {
           "precision": 19.9,
           "recall": 25.5,
@@ -7494,6 +8964,33 @@
           "tp": 35,
           "fp": 141,
           "fn": 102,
+          "num_prs": 50
+        },
+        "greptile-v4": {
+          "precision": 31.6,
+          "recall": 56.9,
+          "f1": 40.6,
+          "tp": 78,
+          "fp": 169,
+          "fn": 59,
+          "num_prs": 50
+        },
+        "sentry": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0,
+          "tp": 0,
+          "fp": 1,
+          "fn": 137,
+          "num_prs": 50
+        },
+        "copilot": {
+          "precision": 26.6,
+          "recall": 53.3,
+          "f1": 35.5,
+          "tp": 73,
+          "fp": 201,
+          "fn": 64,
           "num_prs": 50
         },
         "mra-nano": {
@@ -7514,23 +9011,32 @@
           "fn": 88,
           "num_prs": 50
         },
-        "cubic-dev": {
-          "precision": 20.5,
-          "recall": 76.6,
-          "f1": 32.4,
-          "tp": 105,
-          "fp": 406,
-          "fn": 32,
+        "linearb": {
+          "precision": 7.7,
+          "recall": 3.6,
+          "f1": 5.0,
+          "tp": 5,
+          "fp": 60,
+          "fn": 132,
           "num_prs": 50
         },
-        "bugbot": {
-          "precision": 46.2,
-          "recall": 43.8,
-          "f1": 44.9,
-          "tp": 60,
-          "fp": 70,
-          "fn": 77,
+        "kg": {
+          "precision": 46.9,
+          "recall": 16.8,
+          "f1": 24.7,
+          "tp": 23,
+          "fp": 26,
+          "fn": 114,
           "num_prs": 50
+        },
+        "mra-a": {
+          "precision": 78.6,
+          "recall": 40.7,
+          "f1": 53.7,
+          "tp": 55,
+          "fp": 15,
+          "fn": 80,
+          "num_prs": 49
         },
         "codeant": {
           "precision": 52.2,
@@ -7539,15 +9045,6 @@
           "tp": 70,
           "fp": 64,
           "fn": 67,
-          "num_prs": 50
-        },
-        "mra-max": {
-          "precision": 67.2,
-          "recall": 31.4,
-          "f1": 42.8,
-          "tp": 43,
-          "fp": 21,
-          "fn": 94,
           "num_prs": 50
         },
         "mesa": {
@@ -7559,13 +9056,13 @@
           "fn": 71,
           "num_prs": 50
         },
-        "baz": {
-          "precision": 44.0,
-          "recall": 29.2,
-          "f1": 35.1,
-          "tp": 40,
-          "fp": 51,
-          "fn": 97,
+        "bito": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0,
+          "tp": 0,
+          "fp": 1,
+          "fn": 137,
           "num_prs": 50
         },
         "qodo": {
@@ -7575,6 +9072,69 @@
           "tp": 60,
           "fp": 136,
           "fn": 77,
+          "num_prs": 50
+        },
+        "mra-b": {
+          "precision": 76.1,
+          "recall": 37.2,
+          "f1": 50.0,
+          "tp": 51,
+          "fp": 16,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "devin": {
+          "precision": 50.5,
+          "recall": 37.2,
+          "f1": 42.9,
+          "tp": 51,
+          "fp": 50,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "greptile": {
+          "precision": 38.4,
+          "recall": 38.7,
+          "f1": 38.5,
+          "tp": 53,
+          "fp": 85,
+          "fn": 84,
+          "num_prs": 50
+        },
+        "macroscope": {
+          "precision": 0,
+          "recall": 0.0,
+          "f1": 0,
+          "tp": 0,
+          "fp": 0,
+          "fn": 137,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 46.0,
+          "recall": 38.0,
+          "f1": 41.6,
+          "tp": 52,
+          "fp": 61,
+          "fn": 85,
+          "num_prs": 50
+        },
+        "kodus": {
+          "precision": 13.8,
+          "recall": 46.7,
+          "f1": 21.3,
+          "tp": 64,
+          "fp": 399,
+          "fn": 73,
+          "num_prs": 50
+        },
+        "sourcery": {
+          "precision": 26.2,
+          "recall": 54.7,
+          "f1": 35.5,
+          "tp": 75,
+          "fp": 211,
+          "fn": 62,
           "num_prs": 50
         }
       }
@@ -11915,15 +13475,6 @@
         ]
       },
       "overall_metrics": {
-        "propel": {
-          "precision": 42.4,
-          "recall": 36.5,
-          "f1": 39.2,
-          "tp": 50,
-          "fp": 68,
-          "fn": 87,
-          "num_prs": 50
-        },
         "bugbot": {
           "precision": 44.0,
           "recall": 43.1,
@@ -11931,78 +13482,6 @@
           "tp": 59,
           "fp": 75,
           "fn": 78,
-          "num_prs": 50
-        },
-        "greptile": {
-          "precision": 39.9,
-          "recall": 40.1,
-          "f1": 40.0,
-          "tp": 55,
-          "fp": 83,
-          "fn": 82,
-          "num_prs": 50
-        },
-        "devin": {
-          "precision": 51.0,
-          "recall": 38.7,
-          "f1": 44.0,
-          "tp": 53,
-          "fp": 51,
-          "fn": 84,
-          "num_prs": 50
-        },
-        "claude": {
-          "precision": 33.1,
-          "recall": 40.1,
-          "f1": 36.3,
-          "tp": 55,
-          "fp": 111,
-          "fn": 82,
-          "num_prs": 50
-        },
-        "gemini": {
-          "precision": 28.9,
-          "recall": 36.5,
-          "f1": 32.3,
-          "tp": 50,
-          "fp": 123,
-          "fn": 87,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 43.7,
-          "recall": 63.5,
-          "f1": 51.8,
-          "tp": 87,
-          "fp": 112,
-          "fn": 50,
-          "num_prs": 50
-        },
-        "mra-nano": {
-          "precision": 9.2,
-          "recall": 22.6,
-          "f1": 13.1,
-          "tp": 31,
-          "fp": 305,
-          "fn": 106,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 75.0,
-          "recall": 8.8,
-          "f1": 15.7,
-          "tp": 12,
-          "fp": 4,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "copilot": {
-          "precision": 25.5,
-          "recall": 51.1,
-          "f1": 34.0,
-          "tp": 70,
-          "fp": 205,
-          "fn": 67,
           "num_prs": 50
         },
         "coderabbit": {
@@ -12023,6 +13502,51 @@
           "fn": 96,
           "num_prs": 50
         },
+        "qodo": {
+          "precision": 27.9,
+          "recall": 46.0,
+          "f1": 34.7,
+          "tp": 63,
+          "fp": 163,
+          "fn": 74,
+          "num_prs": 50
+        },
+        "copilot": {
+          "precision": 25.5,
+          "recall": 51.1,
+          "f1": 34.0,
+          "tp": 70,
+          "fp": 205,
+          "fn": 67,
+          "num_prs": 50
+        },
+        "mra-nano": {
+          "precision": 9.2,
+          "recall": 22.6,
+          "f1": 13.1,
+          "tp": 31,
+          "fp": 305,
+          "fn": 106,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 33.1,
+          "recall": 40.1,
+          "f1": 36.3,
+          "tp": 55,
+          "fp": 111,
+          "fn": 82,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 43.7,
+          "recall": 63.5,
+          "f1": 51.8,
+          "tp": 87,
+          "fp": 112,
+          "fn": 50,
+          "num_prs": 50
+        },
         "kg": {
           "precision": 44.9,
           "recall": 16.1,
@@ -12032,13 +13556,49 @@
           "fn": 115,
           "num_prs": 50
         },
-        "qodo": {
-          "precision": 27.9,
-          "recall": 46.0,
-          "f1": 34.7,
-          "tp": 63,
-          "fp": 163,
-          "fn": 74,
+        "devin": {
+          "precision": 51.0,
+          "recall": 38.7,
+          "f1": 44.0,
+          "tp": 53,
+          "fp": 51,
+          "fn": 84,
+          "num_prs": 50
+        },
+        "greptile": {
+          "precision": 39.9,
+          "recall": 40.1,
+          "f1": 40.0,
+          "tp": 55,
+          "fp": 83,
+          "fn": 82,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 42.4,
+          "recall": 36.5,
+          "f1": 39.2,
+          "tp": 50,
+          "fp": 68,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "graphite": {
+          "precision": 75.0,
+          "recall": 8.8,
+          "f1": 15.7,
+          "tp": 12,
+          "fp": 4,
+          "fn": 125,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 28.9,
+          "recall": 36.5,
+          "f1": 32.3,
+          "tp": 50,
+          "fp": 123,
+          "fn": 87,
           "num_prs": 50
         }
       }
@@ -17132,15 +18692,6 @@
         ]
       },
       "overall_metrics": {
-        "propel": {
-          "precision": 38.9,
-          "recall": 37.2,
-          "f1": 38.1,
-          "tp": 51,
-          "fp": 80,
-          "fn": 86,
-          "num_prs": 50
-        },
         "bugbot": {
           "precision": 38.3,
           "recall": 43.1,
@@ -17148,105 +18699,6 @@
           "tp": 59,
           "fp": 95,
           "fn": 78,
-          "num_prs": 50
-        },
-        "greptile": {
-          "precision": 33.8,
-          "recall": 36.5,
-          "f1": 35.1,
-          "tp": 50,
-          "fp": 98,
-          "fn": 87,
-          "num_prs": 50
-        },
-        "devin": {
-          "precision": 41.8,
-          "recall": 37.2,
-          "f1": 39.4,
-          "tp": 51,
-          "fp": 71,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "claude": {
-          "precision": 30.5,
-          "recall": 37.2,
-          "f1": 33.6,
-          "tp": 51,
-          "fp": 116,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "gemini": {
-          "precision": 24.6,
-          "recall": 32.8,
-          "f1": 28.1,
-          "tp": 45,
-          "fp": 138,
-          "fn": 92,
-          "num_prs": 50
-        },
-        "qodo-v2": {
-          "precision": 34.4,
-          "recall": 55.5,
-          "f1": 42.5,
-          "tp": 76,
-          "fp": 145,
-          "fn": 61,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 37.3,
-          "recall": 59.1,
-          "f1": 45.8,
-          "tp": 81,
-          "fp": 136,
-          "fn": 56,
-          "num_prs": 50
-        },
-        "greptile-v4": {
-          "precision": 27.5,
-          "recall": 59.1,
-          "f1": 37.5,
-          "tp": 81,
-          "fp": 214,
-          "fn": 56,
-          "num_prs": 50
-        },
-        "mra-max": {
-          "precision": 7.8,
-          "recall": 32.8,
-          "f1": 12.6,
-          "tp": 45,
-          "fp": 531,
-          "fn": 92,
-          "num_prs": 50
-        },
-        "mra-nano": {
-          "precision": 10.5,
-          "recall": 16.8,
-          "f1": 12.9,
-          "tp": 23,
-          "fp": 197,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 66.7,
-          "recall": 8.8,
-          "f1": 15.5,
-          "tp": 12,
-          "fp": 6,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "copilot": {
-          "precision": 23.5,
-          "recall": 53.3,
-          "f1": 32.6,
-          "tp": 73,
-          "fp": 238,
-          "fn": 64,
           "num_prs": 50
         },
         "coderabbit": {
@@ -17267,6 +18719,60 @@
           "fn": 100,
           "num_prs": 50
         },
+        "qodo": {
+          "precision": 23.4,
+          "recall": 42.3,
+          "f1": 30.1,
+          "tp": 58,
+          "fp": 190,
+          "fn": 79,
+          "num_prs": 50
+        },
+        "copilot": {
+          "precision": 23.5,
+          "recall": 53.3,
+          "f1": 32.6,
+          "tp": 73,
+          "fp": 238,
+          "fn": 64,
+          "num_prs": 50
+        },
+        "mra-nano": {
+          "precision": 10.5,
+          "recall": 16.8,
+          "f1": 12.9,
+          "tp": 23,
+          "fp": 197,
+          "fn": 114,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 30.5,
+          "recall": 37.2,
+          "f1": 33.6,
+          "tp": 51,
+          "fp": 116,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 37.3,
+          "recall": 59.1,
+          "f1": 45.8,
+          "tp": 81,
+          "fp": 136,
+          "fn": 56,
+          "num_prs": 50
+        },
+        "qodo-v2": {
+          "precision": 34.4,
+          "recall": 55.5,
+          "f1": 42.5,
+          "tp": 76,
+          "fp": 145,
+          "fn": 61,
+          "num_prs": 50
+        },
         "kg": {
           "precision": 48.9,
           "recall": 16.8,
@@ -17276,33 +18782,73 @@
           "fn": 114,
           "num_prs": 50
         },
-        "qodo": {
-          "precision": 23.4,
-          "recall": 42.3,
-          "f1": 30.1,
-          "tp": 58,
-          "fp": 190,
-          "fn": 79,
+        "devin": {
+          "precision": 41.8,
+          "recall": 37.2,
+          "f1": 39.4,
+          "tp": 51,
+          "fp": 71,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "greptile": {
+          "precision": 33.8,
+          "recall": 36.5,
+          "f1": 35.1,
+          "tp": 50,
+          "fp": 98,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 38.9,
+          "recall": 37.2,
+          "f1": 38.1,
+          "tp": 51,
+          "fp": 80,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "graphite": {
+          "precision": 66.7,
+          "recall": 8.8,
+          "f1": 15.5,
+          "tp": 12,
+          "fp": 6,
+          "fn": 125,
+          "num_prs": 50
+        },
+        "gemini": {
+          "precision": 24.6,
+          "recall": 32.8,
+          "f1": 28.1,
+          "tp": 45,
+          "fp": 138,
+          "fn": 92,
+          "num_prs": 50
+        },
+        "mra-max": {
+          "precision": 7.8,
+          "recall": 32.8,
+          "f1": 12.6,
+          "tp": 45,
+          "fp": 531,
+          "fn": 92,
+          "num_prs": 50
+        },
+        "greptile-v4": {
+          "precision": 27.5,
+          "recall": 59.1,
+          "f1": 37.5,
+          "tp": 81,
+          "fp": 214,
+          "fn": 56,
           "num_prs": 50
         }
       }
     }
   },
   "predefined_filters": [
-    {
-      "id": "tool_mra-nano_domain_concurrency",
-      "label": "Best for Concurrency (Precision)",
-      "filters": {
-        "domain": [
-          "concurrency"
-        ]
-      },
-      "description": "Threading and async operations.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "mra-nano",
-      "best_score": 100.0,
-      "sort": "precision"
-    },
     {
       "id": "tool_graphite_language_python",
       "label": "Best for Python (Precision)",
@@ -17314,6 +18860,20 @@
       "description": "Python codebases with dynamic typing.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "graphite",
+      "best_score": 100.0,
+      "sort": "precision"
+    },
+    {
+      "id": "tool_mra-nano_domain_concurrency",
+      "label": "Best for Concurrency (Precision)",
+      "filters": {
+        "domain": [
+          "concurrency"
+        ]
+      },
+      "description": "Threading and async operations.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "mra-nano",
       "best_score": 100.0,
       "sort": "precision"
     },
