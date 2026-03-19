@@ -169,6 +169,9 @@ class PRRepository:
     ) -> None:
         await self.db.execute(q.UPDATE_PR_METADATA, (pr_title, pr_author, pr_created_at, pr_merged, pr_id))
 
+    async def update_pr_author(self, pr_id: int, pr_author: str) -> None:
+        await self.db.execute(q.UPDATE_PR_AUTHOR, (pr_author, pr_id))
+
     # -- LLM analyses ----------------------------------------------------------
 
     async def insert_analysis(

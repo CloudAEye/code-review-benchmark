@@ -218,10 +218,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_bf.add_argument("--verbose", action="store_true")
 
     # backfill-pr-author
-    p_bfa = sub.add_parser("backfill-pr-author", help="Backfill pr_author from GitHub API")
+    p_bfa = sub.add_parser("backfill-pr-author", help="Backfill pr_author from BQ events, commits, and optionally GitHub API")
     p_bfa.add_argument("--database-url")
-    p_bfa.add_argument("--batch-size", type=int, default=5000)
-    p_bfa.add_argument("--max-prs", type=int, default=None, help="Max PRs to process (default: all)")
+    p_bfa.add_argument("--limit", type=int, default=None, help="Limit PRs to process (for testing)")
+    p_bfa.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_bfa.add_argument("--use-api", action="store_true", help="Also fetch from GitHub API for unresolved PRs")
     p_bfa.add_argument("--verbose", action="store_true")
 
     # dashboard
@@ -551,7 +552,7 @@ async def cmd_backfill(args: argparse.Namespace) -> None:
 async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
     from db.connection import DBAdapter
     from db.schema import create_tables
-    from pipeline.backfill_pr_author import backfill_pr_authors
+    from pipeline.backfill_pr_author import backfill_pr_author
 
     cfg = DBConfig(verbose=args.verbose)
     if args.database_url:
@@ -561,8 +562,20 @@ async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
     await db.connect()
     try:
         await create_tables(db)
-        await backfill_pr_authors(
-            cfg, db, batch_size=args.batch_size, max_prs=args.max_prs
+        stats = await backfill_pr_author(
+            cfg,
+            db,
+            limit=args.limit,
+            dry_run=args.dry_run,
+            use_api=args.use_api,
+        )
+
+        mode = "DRY RUN" if args.dry_run else "DONE"
+        logger.info(
+            f"{mode} — backfill: total_missing={stats['total_missing']} "
+            f"from_bq={stats['updated_from_bq']} from_commits={stats['updated_from_commits']} "
+            f"from_api={stats['updated_from_api']} still_missing={stats['still_missing']} "
+            f"roles_updated={stats['roles_updated']}"
         )
     finally:
         await db.close()

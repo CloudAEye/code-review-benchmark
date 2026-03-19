@@ -327,6 +327,7 @@ async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_nu
         "deletions": data.get("deletions", 0),
         "commits": data.get("commits", 0),
         "changed_files": data.get("changed_files", 0),
+        "pr_author": (data.get("user") or {}).get("login"),
     }
 
 
@@ -419,6 +420,10 @@ async def enrich_single_pr(
     if cfg is not None and step_idx < 1:
         summary = await _fetch_pr_summary(gh, owner, repo, pr_number)
         if summary is not None:
+            # Backfill pr_author from GitHub API if missing from BQ events
+            if not pr_row.get("pr_author") and summary.get("pr_author"):
+                await repo_obj.update_pr_author(pr_id, summary["pr_author"])
+
             total_lines = summary["additions"] + summary["deletions"]
             if summary["commits"] > cfg.max_pr_commits:
                 reason = f"Too many commits: {summary['commits']} > {cfg.max_pr_commits}"

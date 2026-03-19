@@ -171,6 +171,10 @@ UPDATE_PR_METADATA = """
     WHERE id = $5
 """
 
+UPDATE_PR_AUTHOR = """
+    UPDATE prs SET pr_author = $1 WHERE id = $2
+"""
+
 # -- LLM analyses --------------------------------------------------------------
 
 INSERT_LLM_ANALYSIS = """
