@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>Code Review Benchmark</h1>
+    <h1>Code Review Bench</h1>
     <p>
       <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License"></a>
       <a href="https://discord.com/invite/kX6s6nV3zT"><img src="https://img.shields.io/badge/discord-join-5865F2?logo=discord&logoColor=white" alt="Discord"></a>
@@ -18,13 +18,13 @@
   </picture>
 </div>
 
-Open-source benchmark for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
+Open-source [benchmark](https://codereview.withmartian.com) for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
 
 ## The problem
 
-AI code review tools are proliferating — [Augment](https://www.augmentcode.com/blog/introducing-augment-code-review), [Greptile](https://www.greptile.com/blog/code-review-benchmark), [CodeRabbit](https://www.coderabbit.ai/), GitHub Copilot, and many others all claim to catch real bugs. Some have published benchmark numbers. None have published the benchmark itself.
+As AI agents write more code, we need systems to make sure the code they generate is good. This has led to the proliferation of AI code review tools.
 
-Without shared evaluation code, every company grades its own homework. You can't reproduce the results, compare tools on the same dataset, or verify the methodology. This project changes that.
+Without shared evals for these tools, every company grades its own homework. You can't reproduce the results, compare tools on the same dataset, or verify the methodology. With static evals, agents can game the benchmark. By creating an online and offline benchmark that can check each other, this project allows for robust code review evals.
 
 **We open-source everything**: the PRs, the golden comments, the LLM judge prompts, the evaluation pipeline, and a continuously-updated online benchmark that avoids training data leakage.
 
@@ -175,9 +175,9 @@ We welcome contributions — new tools, better golden comments, improved judge p
 If you use this benchmark in your research or product evaluation, please cite:
 
 ```bibtex
-@software{code_review_benchmark,
-  title   = {Code Review Benchmark},
-  author  = {TODO: insert Martian's names},
+@misc{code_review_benchmark,
+  title   = {Code Review Bench},
+  author  = {Aleksandr Zverianskii and Jacob Clyne and Antía Garcia and Fazl Barez and Shriyash Upadhyay},
   url     = {https://github.com/withmartian/code-review-benchmark},
   year    = {2026},
   license = {MIT}
