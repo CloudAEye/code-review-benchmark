@@ -128,12 +128,12 @@ class GitHubEnrichClient:
                         logger.warning(f"{resp.status_code} for {url} — skipping")
                         return None
                     if resp.status_code == 301:
-                        location = resp.headers.get("Location", "unknown")
-                        raise httpx.HTTPStatusError(
-                            f"301 Moved Permanently (repo likely renamed) → {location}",
-                            request=resp.request,
-                            response=resp,
-                        )
+                        location = resp.headers.get("Location")
+                        if location:
+                            logger.info(f"Following 301 redirect: {url} → {location}")
+                            url = location
+                            continue
+                        return None
                     if resp.status_code >= 500:
                         wait = 2**attempt
                         logger.warning(f"{resp.status_code} on {url}, retrying in {wait}s")
