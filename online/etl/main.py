@@ -223,6 +223,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_bfa.add_argument("--limit", type=int, default=None, help="Limit PRs to process (for testing)")
     p_bfa.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
     p_bfa.add_argument("--use-api", action="store_true", help="Also fetch from GitHub API for unresolved PRs")
+    p_bfa.add_argument("--use-commits", action="store_true", help="Also try git commit author (low-confidence, off by default)")
     p_bfa.add_argument("--verbose", action="store_true")
 
     # dashboard
@@ -568,6 +569,7 @@ async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
             limit=args.limit,
             dry_run=args.dry_run,
             use_api=args.use_api,
+            use_commits=args.use_commits,
         )
 
         mode = "DRY RUN" if args.dry_run else "DONE"

@@ -150,8 +150,11 @@ async def _backfill_from_local_data(
     *,
     limit: int | None = None,
     dry_run: bool = False,
+    use_commits: bool = False,
 ) -> tuple[dict[str, int], list[dict]]:
-    """Phase 1+2: backfill from bq_events and commits.
+    """Phase 1 (+ optional Phase 2): backfill from bq_events (and optionally commits).
+
+    Commits fallback is off by default because git author names != GitHub usernames.
 
     Returns (stats, still_missing_rows).
     """
@@ -196,15 +199,17 @@ async def _backfill_from_local_data(
         author = _extract_author_from_bq_events(row["bq_events"])
         source = "bq_events"
 
-        if not author:
+        # Commits fallback is low-confidence: git author names don't reliably
+        # match GitHub usernames (e.g. "Copilot" vs "copilot[bot]")
+        if not author and use_commits:
             author = _extract_author_from_commits(row["commits"])
-            source = "commits"
+            source = "commits (low-confidence)"
 
         if not author:
             stats["still_missing"] += 1
             still_missing.append(row)
             if dry_run:
-                logger.debug(f"  [SKIP] {repo_name}#{pr_number} (id={pr_id}): no author in bq_events or commits")
+                logger.debug(f"  [SKIP] {repo_name}#{pr_number} (id={pr_id}): no author in bq_events")
             continue
 
         if dry_run:
@@ -389,11 +394,12 @@ async def backfill_pr_author(
     limit: int | None = None,
     dry_run: bool = False,
     use_api: bool = False,
+    use_commits: bool = False,
 ) -> dict[str, int]:
     """Backfill missing pr_author for PRs in the database.
 
     Phase 1: Parse stored bq_events (free, instant).
-    Phase 2: Fall back to stored commits data (free, instant).
+    Phase 2 (if use_commits=True): Fall back to git commit author (low-confidence).
     Phase 3 (if use_api=True): Hit GitHub REST API for remaining PRs.
     All phases: Recompute target_user_roles for updated PRs.
 
@@ -405,7 +411,7 @@ async def backfill_pr_author(
     chatbot_map = {r["id"]: r["github_username"] for r in chatbot_rows}
 
     stats, still_missing = await _backfill_from_local_data(
-        db, chatbot_map, limit=limit, dry_run=dry_run
+        db, chatbot_map, limit=limit, dry_run=dry_run, use_commits=use_commits
     )
 
     if use_api and still_missing:
@@ -424,6 +430,7 @@ async def main() -> None:
     parser.add_argument("--limit", type=int, help="Limit number of PRs to process (for testing)")
     parser.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
     parser.add_argument("--use-api", action="store_true", help="Also fetch from GitHub API for PRs not resolved locally")
+    parser.add_argument("--use-commits", action="store_true", help="Also try git commit author (low-confidence, off by default)")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable debug logging")
     args = parser.parse_args()
 
@@ -449,6 +456,7 @@ async def main() -> None:
             limit=args.limit,
             dry_run=args.dry_run,
             use_api=args.use_api,
+            use_commits=args.use_commits,
         )
 
         mode = "DRY RUN" if args.dry_run else "DONE"
