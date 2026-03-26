@@ -21,8 +21,8 @@ GET_ALL_CHATBOTS = """
 
 INSERT_PR = """
     INSERT INTO prs (chatbot_id, repo_name, pr_number, pr_url, pr_title, pr_author,
-                     pr_created_at, pr_merged, status, bq_events, bot_reviewed_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                     pr_created_at, pr_merged, status, bq_events, bot_reviewed_at, repo_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     ON CONFLICT (chatbot_id, repo_name, pr_number) DO NOTHING
     RETURNING id
 """
@@ -173,6 +173,14 @@ UPDATE_PR_METADATA = """
 
 UPDATE_PR_AUTHOR = """
     UPDATE prs SET pr_author = $1 WHERE id = $2
+"""
+
+MERGE_PR_BQ_EVENTS = """
+    UPDATE prs SET bq_events = $1, pr_merged = COALESCE($2, pr_merged),
+                   pr_title = CASE WHEN pr_title = '' OR pr_title IS NULL THEN $3 ELSE pr_title END,
+                   pr_author = COALESCE(pr_author, $4),
+                   pr_created_at = COALESCE(pr_created_at, $5)
+    WHERE id = $6
 """
 
 # -- LLM analyses --------------------------------------------------------------

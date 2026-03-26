@@ -226,6 +226,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_bfa.add_argument("--use-commits", action="store_true", help="Also try git commit author (low-confidence, off by default)")
     p_bfa.add_argument("--verbose", action="store_true")
 
+    # backfill-metadata
+    p_bfm = sub.add_parser("backfill-metadata", help="Backfill pr_merged and repo_id from pr_api_raw and bq_events")
+    p_bfm.add_argument("--database-url")
+    p_bfm.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
+    p_bfm.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_bfm.add_argument("--verbose", action="store_true")
+
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
     p_dash.add_argument("--port", type=int, default=8501)
@@ -583,6 +590,111 @@ async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
         await db.close()
 
 
+async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
+    """Backfill pr_merged from pr_api_raw and repo_id from bq_events."""
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        limit_clause = f"LIMIT {args.limit}" if args.limit else ""
+
+        # Phase 1: backfill pr_merged from pr_api_raw
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, pr_merged, pr_api_raw
+            FROM prs
+            WHERE pr_api_raw IS NOT NULL AND pr_merged IS NULL
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"pr_merged backfill: {len(rows)} PRs with pr_api_raw but no pr_merged")
+        merged_count = 0
+        for row in rows:
+            import json
+            api_data = json.loads(row["pr_api_raw"])
+            api_merged = api_data.get("merged")
+            if api_merged is not None:
+                if args.dry_run:
+                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): pr_merged={api_merged}")
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET pr_merged = $1 WHERE id = $2",
+                        (api_merged, row["id"]),
+                    ))
+                merged_count += 1
+
+        # Phase 2: backfill repo_id from bq_events
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, bq_events
+            FROM prs
+            WHERE repo_id IS NULL AND bq_events IS NOT NULL
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"repo_id backfill: {len(rows)} PRs with bq_events but no repo_id")
+        repo_id_count = 0
+        for row in rows:
+            import json
+            events = json.loads(row["bq_events"])
+            # BQ events stored from discover may not have repo_id yet (added in this change),
+            # but pr_api_raw has the repo id
+            repo_id = None
+            for e in events:
+                if e.get("repo_id"):
+                    repo_id = int(e["repo_id"])
+                    break
+            if repo_id is None and row.get("pr_api_raw"):
+                api_data = json.loads(row["pr_api_raw"])
+                repo_id = api_data.get("id")
+            if repo_id:
+                if args.dry_run:
+                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET repo_id = $1 WHERE id = $2",
+                        (repo_id, row["id"]),
+                    ))
+                repo_id_count += 1
+
+        # Phase 3: backfill repo_id from pr_api_raw for rows still missing
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, pr_api_raw
+            FROM prs
+            WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"repo_id from API backfill: {len(rows)} PRs with pr_api_raw but no repo_id")
+        repo_id_api_count = 0
+        for row in rows:
+            import json
+            api_data = json.loads(row["pr_api_raw"])
+            # pr_api_raw is the PR object; repo id is at base.repo.id
+            repo_obj = api_data.get("base", {}).get("repo", {})
+            repo_id = repo_obj.get("id")
+            if repo_id:
+                if args.dry_run:
+                    logger.info(f"  [DRY/API] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET repo_id = $1 WHERE id = $2",
+                        (repo_id, row["id"]),
+                    ))
+                repo_id_api_count += 1
+
+        mode = "DRY RUN" if args.dry_run else "DONE"
+        logger.info(
+            f"{mode} — metadata backfill: "
+            f"pr_merged={merged_count}, repo_id_from_bq={repo_id_count}, "
+            f"repo_id_from_api={repo_id_api_count}"
+        )
+    finally:
+        await db.close()
+
+
 async def cmd_import(args: argparse.Namespace) -> None:
     from migration.import_filesystem import import_all
 
@@ -633,6 +745,8 @@ def main() -> None:
         asyncio.run(cmd_backfill(args))
     elif args.command == "backfill-pr-author":
         asyncio.run(cmd_backfill_pr_author(args))
+    elif args.command == "backfill-metadata":
+        asyncio.run(cmd_backfill_metadata(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 
