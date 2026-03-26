@@ -591,7 +591,8 @@ async def cmd_backfill_pr_author(args: argparse.Namespace) -> None:
 
 
 async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
-    """Backfill pr_merged from pr_api_raw and repo_id from bq_events."""
+    """Backfill pr_merged from pr_api_raw, repo_id from pr_api_raw, and fix assembled.pr_merged."""
+    import json as json_mod
     from db.connection import DBAdapter
     from db.schema import create_tables
 
@@ -604,52 +605,87 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
     try:
         await create_tables(db)
         limit_clause = f"LIMIT {args.limit}" if args.limit else ""
+        stats = {"merged_set": 0, "merged_corrected": 0, "assembled_fixed": 0, "repo_id_set": 0}
 
-        # Phase 1: backfill pr_merged from pr_api_raw
+        # Phase 1a: backfill pr_merged from pr_api_raw (NULL rows)
         rows = await db.fetchall(f"""
             SELECT id, repo_name, pr_number, pr_merged, pr_api_raw
             FROM prs
             WHERE pr_api_raw IS NOT NULL AND pr_merged IS NULL
             ORDER BY id {limit_clause}
         """)
-        logger.info(f"pr_merged backfill: {len(rows)} PRs with pr_api_raw but no pr_merged")
-        merged_count = 0
+        logger.info(f"Phase 1a: {len(rows)} PRs with pr_api_raw but pr_merged IS NULL")
         for row in rows:
-            import json
-            api_data = json.loads(row["pr_api_raw"])
+            api_data = json_mod.loads(row["pr_api_raw"])
             api_merged = api_data.get("merged")
             if api_merged is not None:
                 if args.dry_run:
-                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): pr_merged={api_merged}")
+                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): pr_merged=NULL -> {api_merged}")
                 else:
                     await db.execute(*db._translate_params(
                         "UPDATE prs SET pr_merged = $1 WHERE id = $2",
                         (api_merged, row["id"]),
                     ))
-                merged_count += 1
+                stats["merged_set"] += 1
 
-        # Phase 2: backfill repo_id from bq_events
+        # Phase 1b: fix pr_merged=False that should be True (API is authoritative)
         rows = await db.fetchall(f"""
-            SELECT id, repo_name, pr_number, bq_events
+            SELECT id, repo_name, pr_number, pr_api_raw
             FROM prs
-            WHERE repo_id IS NULL AND bq_events IS NOT NULL
+            WHERE pr_api_raw IS NOT NULL AND pr_merged = false
             ORDER BY id {limit_clause}
         """)
-        logger.info(f"repo_id backfill: {len(rows)} PRs with bq_events but no repo_id")
-        repo_id_count = 0
+        logger.info(f"Phase 1b: {len(rows)} PRs with pr_merged=False, checking against API")
         for row in rows:
-            import json
-            events = json.loads(row["bq_events"])
-            # BQ events stored from discover may not have repo_id yet (added in this change),
-            # but pr_api_raw has the repo id
-            repo_id = None
-            for e in events:
-                if e.get("repo_id"):
-                    repo_id = int(e["repo_id"])
-                    break
-            if repo_id is None and row.get("pr_api_raw"):
-                api_data = json.loads(row["pr_api_raw"])
-                repo_id = api_data.get("id")
+            api_data = json_mod.loads(row["pr_api_raw"])
+            if api_data.get("merged") is True:
+                if args.dry_run:
+                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): pr_merged=False -> True")
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET pr_merged = $1 WHERE id = $2",
+                        (True, row["id"]),
+                    ))
+                stats["merged_corrected"] += 1
+
+        # Phase 2: fix assembled.pr_merged to match prs.pr_merged (patch assembled JSON)
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, pr_merged, assembled
+            FROM prs
+            WHERE pr_merged IS NOT NULL AND assembled IS NOT NULL
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"Phase 2: {len(rows)} assembled PRs to check assembled.pr_merged consistency")
+        for i, row in enumerate(rows):
+            assembled = json_mod.loads(row["assembled"])
+            if assembled.get("pr_merged") != row["pr_merged"]:
+                assembled["pr_merged"] = row["pr_merged"]
+                if args.dry_run:
+                    logger.info(
+                        f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): "
+                        f"assembled.pr_merged -> {row['pr_merged']}"
+                    )
+                else:
+                    await db.execute(*db._translate_params(
+                        "UPDATE prs SET assembled = $1 WHERE id = $2",
+                        (json_mod.dumps(assembled), row["id"]),
+                    ))
+                stats["assembled_fixed"] += 1
+            if (i + 1) % 10_000 == 0:
+                logger.info(f"  Phase 2 progress: {i + 1}/{len(rows)}")
+
+        # Phase 3: backfill repo_id from pr_api_raw (base.repo.id)
+        rows = await db.fetchall(f"""
+            SELECT id, repo_name, pr_number, pr_api_raw
+            FROM prs
+            WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL
+            ORDER BY id {limit_clause}
+        """)
+        logger.info(f"Phase 3: {len(rows)} PRs with pr_api_raw but no repo_id")
+        for row in rows:
+            api_data = json_mod.loads(row["pr_api_raw"])
+            repo_obj = api_data.get("base", {}).get("repo", {})
+            repo_id = repo_obj.get("id")
             if repo_id:
                 if args.dry_run:
                     logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
@@ -658,38 +694,21 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
                         "UPDATE prs SET repo_id = $1 WHERE id = $2",
                         (repo_id, row["id"]),
                     ))
-                repo_id_count += 1
-
-        # Phase 3: backfill repo_id from pr_api_raw for rows still missing
-        rows = await db.fetchall(f"""
-            SELECT id, repo_name, pr_number, pr_api_raw
-            FROM prs
-            WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL
-            ORDER BY id {limit_clause}
-        """)
-        logger.info(f"repo_id from API backfill: {len(rows)} PRs with pr_api_raw but no repo_id")
-        repo_id_api_count = 0
-        for row in rows:
-            import json
-            api_data = json.loads(row["pr_api_raw"])
-            # pr_api_raw is the PR object; repo id is at base.repo.id
-            repo_obj = api_data.get("base", {}).get("repo", {})
-            repo_id = repo_obj.get("id")
-            if repo_id:
-                if args.dry_run:
-                    logger.info(f"  [DRY/API] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
-                else:
-                    await db.execute(*db._translate_params(
-                        "UPDATE prs SET repo_id = $1 WHERE id = $2",
-                        (repo_id, row["id"]),
-                    ))
-                repo_id_api_count += 1
+                stats["repo_id_set"] += 1
 
         mode = "DRY RUN" if args.dry_run else "DONE"
         logger.info(
             f"{mode} — metadata backfill: "
-            f"pr_merged={merged_count}, repo_id_from_bq={repo_id_count}, "
-            f"repo_id_from_api={repo_id_api_count}"
+            f"merged_set={stats['merged_set']}, merged_corrected={stats['merged_corrected']}, "
+            f"assembled_fixed={stats['assembled_fixed']}, repo_id_set={stats['repo_id_set']}"
+        )
+
+        # Summary of what's still missing
+        still_null = await db.fetchone("SELECT COUNT(*) as cnt FROM prs WHERE pr_merged IS NULL")
+        no_repo_id = await db.fetchone("SELECT COUNT(*) as cnt FROM prs WHERE repo_id IS NULL")
+        logger.info(
+            f"Remaining gaps: pr_merged NULL={still_null['cnt']}, repo_id NULL={no_repo_id['cnt']} "
+            f"(these need API fetch or re-discover to resolve)"
         )
     finally:
         await db.close()

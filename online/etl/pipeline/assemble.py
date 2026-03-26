@@ -108,10 +108,10 @@ def _extract_pr_metadata(bq_events: list[dict]) -> dict:
                 meta["pr_author"] = (pr_obj.get("user") or {}).get("login")
             if meta["pr_created_at"] is None:
                 meta["pr_created_at"] = pr_obj.get("created_at")
-            if meta["pr_merged"] is None:
-                if payload.get("action") == "closed" and pr_obj.get("merged"):
+            if payload.get("action") == "closed":
+                if pr_obj.get("merged"):
                     meta["pr_merged"] = True
-                elif payload.get("action") == "closed":
+                elif meta["pr_merged"] is None:
                     meta["pr_merged"] = False
         elif event["type"] in ("PullRequestReviewEvent", "PullRequestReviewCommentEvent"):
             pr_obj = payload.get("pull_request", {})
