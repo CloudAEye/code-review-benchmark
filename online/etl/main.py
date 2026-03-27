@@ -233,6 +233,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_bfm.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
     p_bfm.add_argument("--verbose", action="store_true")
 
+    # backfill-api-raw
+    p_bar = sub.add_parser("backfill-api-raw", help="Fetch pr_api_raw from GitHub API for PRs missing it, sets pr_merged + repo_id")
+    p_bar.add_argument("--database-url")
+    p_bar.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
+    p_bar.add_argument("--status-filter", default="analyzed", help="Only fetch for PRs with this status (default: analyzed)")
+    p_bar.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
+    p_bar.add_argument("--verbose", action="store_true")
+
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
     p_dash.add_argument("--port", type=int, default=8501)
@@ -615,7 +623,7 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
             ORDER BY id {limit_clause}
         """)
         logger.info(f"Phase 1a: {len(rows)} PRs with pr_api_raw but pr_merged IS NULL")
-        for row in rows:
+        for i, row in enumerate(rows):
             api_data = json_mod.loads(row["pr_api_raw"])
             api_merged = api_data.get("merged")
             if api_merged is not None:
@@ -627,6 +635,8 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
                         (api_merged, row["id"]),
                     ))
                 stats["merged_set"] += 1
+            if (i + 1) % 10_000 == 0:
+                logger.info(f"  Phase 1a progress: {i + 1}/{len(rows)}")
 
         # Phase 1b: fix pr_merged=False that should be True (API is authoritative)
         rows = await db.fetchall(f"""
@@ -636,7 +646,7 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
             ORDER BY id {limit_clause}
         """)
         logger.info(f"Phase 1b: {len(rows)} PRs with pr_merged=False, checking against API")
-        for row in rows:
+        for i, row in enumerate(rows):
             api_data = json_mod.loads(row["pr_api_raw"])
             if api_data.get("merged") is True:
                 if args.dry_run:
@@ -647,6 +657,8 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
                         (True, row["id"]),
                     ))
                 stats["merged_corrected"] += 1
+            if (i + 1) % 10_000 == 0:
+                logger.info(f"  Phase 1b progress: {i + 1}/{len(rows)}")
 
         # Phase 2: fix assembled.pr_merged to match prs.pr_merged (patch assembled JSON)
         rows = await db.fetchall(f"""
@@ -682,7 +694,7 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
             ORDER BY id {limit_clause}
         """)
         logger.info(f"Phase 3: {len(rows)} PRs with pr_api_raw but no repo_id")
-        for row in rows:
+        for i, row in enumerate(rows):
             api_data = json_mod.loads(row["pr_api_raw"])
             repo_obj = api_data.get("base", {}).get("repo", {})
             repo_id = repo_obj.get("id")
@@ -695,6 +707,8 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
                         (repo_id, row["id"]),
                     ))
                 stats["repo_id_set"] += 1
+            if (i + 1) % 10_000 == 0:
+                logger.info(f"  Phase 3 progress: {i + 1}/{len(rows)}")
 
         mode = "DRY RUN" if args.dry_run else "DONE"
         logger.info(
@@ -710,6 +724,144 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
             f"Remaining gaps: pr_merged NULL={still_null['cnt']}, repo_id NULL={no_repo_id['cnt']} "
             f"(these need API fetch or re-discover to resolve)"
         )
+    finally:
+        await db.close()
+
+
+async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
+    """Fetch pr_api_raw from GitHub API for PRs missing it. Sets pr_merged + repo_id."""
+    import json as json_mod
+    import time as time_mod
+    from db.connection import DBAdapter
+    from db.schema import create_tables
+    from pipeline.enrich import GitHubEnrichClient, RateLimitExhaustedError, TokenPool
+
+    cfg = DBConfig(verbose=args.verbose)
+    if args.database_url:
+        cfg.database_url = args.database_url
+
+    db = DBAdapter(cfg.database_url)
+    await db.connect()
+    try:
+        await create_tables(db)
+        limit_clause = f"LIMIT {args.limit}" if args.limit else ""
+        status_filter = args.status_filter
+
+        rows = await db.fetchall(
+            f"""
+            SELECT id, repo_name, pr_number
+            FROM prs
+            WHERE pr_api_raw IS NULL
+              AND status = '{status_filter}'
+            ORDER BY id
+            {limit_clause}
+            """
+        )
+        logger.info(f"Found {len(rows)} {status_filter} PRs missing pr_api_raw")
+
+        if not rows:
+            return
+
+        if args.dry_run:
+            logger.info(f"[DRY RUN] Would fetch pr_api_raw for {len(rows)} PRs")
+            return
+
+        tokens = cfg.github_tokens if cfg.github_tokens else [cfg.github_token]
+        pool = TokenPool(tokens)
+        n_tokens = pool.size
+        n_workers = n_tokens * 10
+        logger.info(f"Using {n_tokens} token(s), {n_workers} workers")
+
+        queue: asyncio.Queue[dict | None] = asyncio.Queue()
+        stop_event = asyncio.Event()
+        updated = 0
+        skipped = 0
+
+        async def _worker(worker_id: int) -> None:
+            nonlocal updated, skipped
+            while True:
+                item = await queue.get()
+                if item is None:
+                    queue.task_done()
+                    break
+
+                pr_id = item["id"]
+                repo_name = item["repo_name"]
+                pr_number = item["pr_number"]
+
+                try:
+                    owner, repo = repo_name.split("/", 1)
+                except ValueError:
+                    skipped += 1
+                    queue.task_done()
+                    continue
+
+                gh = None
+                try:
+                    while True:
+                        gh = pool.get()
+                        if gh is None:
+                            wait = max(0, pool.earliest_reset() - time_mod.time()) + 5
+                            logger.warning(f"Worker {worker_id}: all tokens rate-limited, sleeping {wait:.0f}s")
+                            await asyncio.sleep(wait)
+                            continue
+                        try:
+                            resp = await gh.rest_get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
+                            if resp is None:
+                                skipped += 1
+                                break
+
+                            data = resp.json()
+                            pr_merged = data.get("merged")
+                            repo_id = (data.get("base") or {}).get("repo", {}).get("id")
+
+                            await db.execute(*db._translate_params(
+                                "UPDATE prs SET pr_api_raw = $1, pr_merged = COALESCE($2, pr_merged), "
+                                "repo_id = COALESCE(repo_id, $3) WHERE id = $4",
+                                (json_mod.dumps(data), pr_merged, repo_id, pr_id),
+                            ))
+                            updated += 1
+                            break
+                        except RateLimitExhaustedError as e:
+                            pool.mark_limited(gh, e.reset_at)
+                            logger.info(f"Worker {worker_id}: token rate-limited, rotating ({pool.status_summary()})")
+                            gh = None
+                            continue
+                finally:
+                    if gh is not None:
+                        pool.release(gh)
+                    queue.task_done()
+
+        async def _progress_logger() -> None:
+            while not stop_event.is_set():
+                await asyncio.sleep(15)
+                total_done = updated + skipped
+                pct = total_done * 100 // len(rows) if rows else 0
+                logger.info(
+                    f"API progress: {total_done}/{len(rows)} ({pct}%) "
+                    f"[updated={updated} skipped={skipped}] "
+                    f"| Tokens: {pool.status_summary()}"
+                )
+
+        for row in rows:
+            await queue.put(row)
+        for _ in range(n_workers):
+            await queue.put(None)
+
+        workers = [asyncio.create_task(_worker(i)) for i in range(n_workers)]
+        progress_task = asyncio.create_task(_progress_logger())
+
+        await queue.join()
+        stop_event.set()
+        await asyncio.gather(*workers)
+        progress_task.cancel()
+        try:
+            await progress_task
+        except asyncio.CancelledError:
+            pass
+
+        await pool.close()
+        logger.info(f"DONE — backfill-api-raw: updated={updated}, skipped={skipped}")
     finally:
         await db.close()
 
@@ -766,6 +918,8 @@ def main() -> None:
         asyncio.run(cmd_backfill_pr_author(args))
     elif args.command == "backfill-metadata":
         asyncio.run(cmd_backfill_metadata(args))
+    elif args.command == "backfill-api-raw":
+        asyncio.run(cmd_backfill_api_raw(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 
