@@ -763,6 +763,8 @@ async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
             return
 
         if args.dry_run:
+            for row in rows:
+                logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']})")
             logger.info(f"[DRY RUN] Would fetch pr_api_raw for {len(rows)} PRs")
             return
 
