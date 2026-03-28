@@ -29,6 +29,7 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
         JOIN prs p ON la.pr_id = p.id
         JOIN chatbots c ON la.chatbot_id = c.id
         LEFT JOIN pr_labels pl ON pl.pr_id = la.pr_id AND pl.chatbot_id = la.chatbot_id
+        WHERE p.pr_merged = TRUE
         ORDER BY p.bot_reviewed_at ASC NULLS FIRST
         "#,
     )

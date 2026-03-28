@@ -95,6 +95,7 @@ class PRRepository:
         if bq_events:
             existing = await self.get_pr(chatbot_id, repo_name, pr_number)
             if existing:
+                old_events = json.loads(existing["bq_events"]) if isinstance(existing.get("bq_events"), str) else (existing.get("bq_events") or [])
                 merged_events = _merge_bq_events(existing.get("bq_events"), bq_events)
                 from pipeline.discover import _extract_pr_metadata
                 meta = _extract_pr_metadata(merged_events)
@@ -111,6 +112,16 @@ class PRRepository:
                         ),
                     )
                 )
+                # New events arrived — reset to pending so PR gets
+                # re-enriched/assembled/analyzed with the updated timeline
+                if len(merged_events) > len(old_events):
+                    await self.db.execute(
+                        *self.db._translate_params(
+                            "UPDATE prs SET status = 'pending', enrichment_step = NULL, "
+                            "assembled = NULL, assembled_at = NULL WHERE id = $1",
+                            (existing["id"],),
+                        )
+                    )
                 # Also set repo_id if we have it and existing doesn't
                 if repo_id and not existing.get("repo_id"):
                     await self.db.execute(

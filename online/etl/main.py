@@ -661,54 +661,82 @@ async def cmd_backfill_metadata(args: argparse.Namespace) -> None:
                 logger.info(f"  Phase 1b progress: {i + 1}/{len(rows)}")
 
         # Phase 2: fix assembled.pr_merged to match prs.pr_merged (patch assembled JSON)
-        rows = await db.fetchall(f"""
-            SELECT id, repo_name, pr_number, pr_merged, assembled
-            FROM prs
-            WHERE pr_merged IS NOT NULL AND assembled IS NOT NULL
-            ORDER BY id {limit_clause}
-        """)
-        logger.info(f"Phase 2: {len(rows)} assembled PRs to check assembled.pr_merged consistency")
-        for i, row in enumerate(rows):
-            assembled = json_mod.loads(row["assembled"])
-            if assembled.get("pr_merged") != row["pr_merged"]:
-                assembled["pr_merged"] = row["pr_merged"]
-                if args.dry_run:
-                    logger.info(
-                        f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): "
-                        f"assembled.pr_merged -> {row['pr_merged']}"
-                    )
-                else:
-                    await db.execute(*db._translate_params(
-                        "UPDATE prs SET assembled = $1 WHERE id = $2",
-                        (json_mod.dumps(assembled), row["id"]),
-                    ))
-                stats["assembled_fixed"] += 1
-            if (i + 1) % 10_000 == 0:
-                logger.info(f"  Phase 2 progress: {i + 1}/{len(rows)}")
+        # Process in batches to avoid OOM on large datasets
+        BATCH_SIZE = 5_000
+        phase2_total = 0
+        last_id = 0
+        count_row = await db.fetchone(
+            "SELECT COUNT(*) as cnt FROM prs WHERE pr_merged IS NOT NULL AND assembled IS NOT NULL"
+        )
+        logger.info(f"Phase 2: ~{count_row['cnt']} assembled PRs to check assembled.pr_merged consistency")
+        while True:
+            batch_limit = f"LIMIT {min(BATCH_SIZE, args.limit - phase2_total)}" if args.limit else f"LIMIT {BATCH_SIZE}"
+            rows = await db.fetchall(f"""
+                SELECT id, repo_name, pr_number, pr_merged, assembled
+                FROM prs
+                WHERE pr_merged IS NOT NULL AND assembled IS NOT NULL AND id > {last_id}
+                ORDER BY id
+                {batch_limit}
+            """)
+            if not rows:
+                break
+            for row in rows:
+                assembled = json_mod.loads(row["assembled"])
+                if assembled.get("pr_merged") != row["pr_merged"]:
+                    assembled["pr_merged"] = row["pr_merged"]
+                    if args.dry_run:
+                        logger.info(
+                            f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): "
+                            f"assembled.pr_merged -> {row['pr_merged']}"
+                        )
+                    else:
+                        await db.execute(*db._translate_params(
+                            "UPDATE prs SET assembled = $1 WHERE id = $2",
+                            (json_mod.dumps(assembled), row["id"]),
+                        ))
+                    stats["assembled_fixed"] += 1
+                last_id = row["id"]
+            phase2_total += len(rows)
+            logger.info(f"  Phase 2 progress: {phase2_total}/{count_row['cnt']}")
+            if args.limit and phase2_total >= args.limit:
+                break
 
         # Phase 3: backfill repo_id from pr_api_raw (base.repo.id)
-        rows = await db.fetchall(f"""
-            SELECT id, repo_name, pr_number, pr_api_raw
-            FROM prs
-            WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL
-            ORDER BY id {limit_clause}
-        """)
-        logger.info(f"Phase 3: {len(rows)} PRs with pr_api_raw but no repo_id")
-        for i, row in enumerate(rows):
-            api_data = json_mod.loads(row["pr_api_raw"])
-            repo_obj = api_data.get("base", {}).get("repo", {})
-            repo_id = repo_obj.get("id")
-            if repo_id:
-                if args.dry_run:
-                    logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
-                else:
-                    await db.execute(*db._translate_params(
-                        "UPDATE prs SET repo_id = $1 WHERE id = $2",
-                        (repo_id, row["id"]),
-                    ))
-                stats["repo_id_set"] += 1
-            if (i + 1) % 10_000 == 0:
-                logger.info(f"  Phase 3 progress: {i + 1}/{len(rows)}")
+        phase3_total = 0
+        last_id = 0
+        count_row = await db.fetchone(
+            "SELECT COUNT(*) as cnt FROM prs WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL"
+        )
+        logger.info(f"Phase 3: {count_row['cnt']} PRs with pr_api_raw but no repo_id")
+        while True:
+            batch_limit = f"LIMIT {min(BATCH_SIZE, args.limit - phase3_total)}" if args.limit else f"LIMIT {BATCH_SIZE}"
+            rows = await db.fetchall(f"""
+                SELECT id, repo_name, pr_number, pr_api_raw
+                FROM prs
+                WHERE repo_id IS NULL AND pr_api_raw IS NOT NULL AND id > {last_id}
+                ORDER BY id
+                {batch_limit}
+            """)
+            if not rows:
+                break
+            for row in rows:
+                api_data = json_mod.loads(row["pr_api_raw"])
+                repo_obj = api_data.get("base", {}).get("repo", {})
+                repo_id = repo_obj.get("id")
+                if repo_id:
+                    if args.dry_run:
+                        logger.info(f"  [DRY] {row['repo_name']}#{row['pr_number']} (id={row['id']}): repo_id={repo_id}")
+                    else:
+                        await db.execute(*db._translate_params(
+                            "UPDATE prs SET repo_id = $1 WHERE id = $2",
+                            (repo_id, row["id"]),
+                        ))
+                    stats["repo_id_set"] += 1
+                last_id = row["id"]
+            phase3_total += len(rows)
+            logger.info(f"  Phase 3 progress: {phase3_total}/{count_row['cnt']}")
+            if args.limit and phase3_total >= args.limit:
+                break
 
         mode = "DRY RUN" if args.dry_run else "DONE"
         logger.info(
