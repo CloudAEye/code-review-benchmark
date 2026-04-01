@@ -328,6 +328,9 @@ async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_nu
         "commits": data.get("commits", 0),
         "changed_files": data.get("changed_files", 0),
         "pr_author": (data.get("user") or {}).get("login"),
+        "merged": data.get("merged"),
+        "repo_id": (data.get("base") or {}).get("repo", {}).get("id"),
+        "raw": data,
     }
 
 
@@ -423,6 +426,16 @@ async def enrich_single_pr(
             # Backfill pr_author from GitHub API if missing from BQ events
             if not pr_row.get("pr_author") and summary.get("pr_author"):
                 await repo_obj.update_pr_author(pr_id, summary["pr_author"])
+
+            # Store pr_api_raw, pr_merged, repo_id from the API response
+            await repo_obj.db.execute(
+                *repo_obj.db._translate_params(
+                    "UPDATE prs SET pr_api_raw = COALESCE(pr_api_raw, $1), "
+                    "pr_merged = COALESCE($2, pr_merged), "
+                    "repo_id = COALESCE(repo_id, $3) WHERE id = $4",
+                    (json.dumps(summary["raw"]), summary["merged"], summary["repo_id"], pr_id),
+                )
+            )
 
             total_lines = summary["additions"] + summary["deletions"]
             if summary["commits"] > cfg.max_pr_commits:
