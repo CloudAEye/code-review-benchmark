@@ -29,6 +29,9 @@ pub struct MetricsQuery {
     pub include_ignored: Option<bool>,
     pub exclude_self_authored: Option<bool>,
     pub require_reviews: Option<bool>,
+    pub exclude_bot_authored: Option<bool>,
+    pub min_repo_contributors: Option<u32>,
+    pub max_author_repo_prs: Option<u32>,
 }
 
 fn parse_date(s: &str) -> Option<NaiveDate> {
@@ -74,6 +77,9 @@ fn to_filter_params(q: &MetricsQuery) -> FilterParams {
         include_ignored: q.include_ignored.unwrap_or(false),
         exclude_self_authored: q.exclude_self_authored.unwrap_or(false),
         require_reviews: q.require_reviews.unwrap_or(false),
+        exclude_bot_authored: q.exclude_bot_authored.unwrap_or(false),
+        min_repo_contributors: q.min_repo_contributors,
+        max_author_repo_prs: q.max_author_repo_prs,
     }
 }
 

@@ -21,6 +21,7 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
                p.bot_reviewed_at,
                p.diff_lines,
                p.pr_author,
+               p.repo_name,
                c.github_username,
                c.display_name,
                pl.labels as pr_labels_json,
@@ -74,6 +75,7 @@ struct RawRow {
     bot_reviewed_at: Option<DateTime<Utc>>,
     diff_lines: Option<i32>,
     pr_author: Option<String>,
+    repo_name: String,
     github_username: String,
     display_name: Option<String>,
     pr_labels_json: Option<String>,
@@ -89,14 +91,33 @@ struct VolumeRawRow {
     display_name: Option<String>,
 }
 
+fn is_bot_username(username: &str) -> bool {
+    let lower = username.to_lowercase();
+    lower.ends_with("[bot]")
+        || matches!(
+            lower.as_str(),
+            "dependabot" | "renovate" | "github-actions" | "codecov"
+            | "mergify" | "snyk-bot" | "greenkeeper" | "imgbot"
+            | "stale" | "allcontributors" | "semantic-release-bot"
+        )
+}
+
 fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_usernames: &HashSet<String>) -> anyhow::Result<Snapshot> {
     let mut chatbot_map: HashMap<i32, u8> = HashMap::new();
     let mut chatbots: Vec<ChatbotInfo> = Vec::new();
     let mut language_map: HashMap<String, u16> = HashMap::new();
     let mut languages: Vec<String> = Vec::new();
+    let mut repo_name_map: HashMap<String, u32> = HashMap::new();
+    let mut repo_names: Vec<String> = Vec::new();
+    let mut author_map: HashMap<String, u32> = HashMap::new();
 
     let mut by_date: BTreeMap<chrono::NaiveDate, Vec<PrRecord>> = BTreeMap::new();
     let mut no_date: Vec<PrRecord> = Vec::new();
+
+    // Aggregate accumulators
+    let mut repo_contributors: HashMap<u32, HashSet<u32>> = HashMap::new();
+    // (repo_name_idx, author_idx, chatbot_idx) -> count
+    let mut author_repo_counts: HashMap<(u32, u32, u8), u32> = HashMap::new();
 
     for row in rows {
         // Chatbot lookup
@@ -110,6 +131,15 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             idx
         });
 
+        // Repo name dedup
+        let repo_name_idx = {
+            let len = repo_names.len() as u32;
+            *repo_name_map.entry(row.repo_name.clone()).or_insert_with(|| {
+                repo_names.push(row.repo_name.clone());
+                len
+            })
+        };
+
         // Parse labels
         let (language, domain, pr_type, severity) = parse_labels(
             row.pr_labels_json.as_deref(),
@@ -120,6 +150,23 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
         let self_authored = row.pr_author.as_ref()
             .map(|a| a.eq_ignore_ascii_case(&row.github_username))
             .unwrap_or(false);
+
+        let pr_author_is_bot = row.pr_author.as_ref()
+            .map(|a| is_bot_username(a))
+            .unwrap_or(false);
+
+        // Author dedup + aggregate accumulators
+        let author_idx = match row.pr_author.as_ref() {
+            Some(author) => {
+                let author_lower = author.to_lowercase();
+                let len = author_map.len() as u32;
+                let idx = *author_map.entry(author_lower).or_insert(len);
+                repo_contributors.entry(repo_name_idx).or_default().insert(idx);
+                *author_repo_counts.entry((repo_name_idx, idx, chatbot_idx)).or_default() += 1;
+                idx
+            }
+            None => u32::MAX,
+        };
 
         let record = PrRecord {
             chatbot_idx,
@@ -133,6 +180,9 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             severity,
             self_authored,
             has_reviews: row.has_reviews.unwrap_or(false),
+            pr_author_is_bot,
+            repo_name_idx,
+            author_idx,
         };
 
         match row.bot_reviewed_at {
@@ -145,6 +195,12 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             }
         }
     }
+
+    // Finalize aggregate lookups: repo_name_idx -> unique contributor count
+    let repo_contributor_counts: HashMap<u32, u32> = repo_contributors
+        .into_iter()
+        .map(|(repo_idx, authors)| (repo_idx, authors.len() as u32))
+        .collect();
 
     let total_records: usize = by_date.values().map(|v| v.len()).sum::<usize>() + no_date.len();
     let has_domain: usize = by_date.values().flat_map(|v| v.iter()).chain(no_date.iter())
@@ -192,6 +248,8 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
         chatbots,
         languages,
         volumes,
+        repo_contributor_counts,
+        author_repo_counts,
     })
 }
 

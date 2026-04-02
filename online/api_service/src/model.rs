@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 // ---------------------------------------------------------------------------
 // Enums — filter dimensions parsed from pr_labels JSON
@@ -95,6 +95,10 @@ pub struct PrRecord {
     pub severity: Option<Severity>,
     pub self_authored: bool,
     pub has_reviews: bool,
+    pub pr_author_is_bot: bool,
+    pub repo_name_idx: u32,
+    /// Index into Snapshot.authors (lowercased), or u32::MAX if unknown
+    pub author_idx: u32,
 }
 
 // ---------------------------------------------------------------------------
@@ -125,6 +129,10 @@ pub struct Snapshot {
     pub chatbots: Vec<ChatbotInfo>,
     pub languages: Vec<String>,
     pub volumes: BTreeMap<NaiveDate, Vec<VolumeRecord>>,
+    /// repo_name_idx -> number of unique PR authors in that repo
+    pub repo_contributor_counts: HashMap<u32, u32>,
+    /// (repo_name_idx, author_idx, chatbot_idx) -> PR count
+    pub author_repo_counts: HashMap<(u32, u32, u8), u32>,
 }
 
 // ---------------------------------------------------------------------------
@@ -148,6 +156,11 @@ pub struct FilterParams {
     pub include_ignored: bool,
     pub exclude_self_authored: bool,
     pub require_reviews: bool,
+    pub exclude_bot_authored: bool,
+    /// Exclude PRs from repos with fewer unique contributors than this
+    pub min_repo_contributors: Option<u32>,
+    /// Cap: exclude PRs where (repo, author, bot) triple exceeds this count
+    pub max_author_repo_prs: Option<u32>,
 }
 
 impl Default for FilterParams {
@@ -168,6 +181,9 @@ impl Default for FilterParams {
             include_ignored: false,
             exclude_self_authored: false,
             require_reviews: false,
+            exclude_bot_authored: false,
+            min_repo_contributors: None,
+            max_author_repo_prs: None,
         }
     }
 }

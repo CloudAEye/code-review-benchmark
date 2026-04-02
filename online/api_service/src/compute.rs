@@ -119,6 +119,35 @@ fn record_matches(record: &PrRecord, snapshot: &Snapshot, params: &FilterParams)
         return false;
     }
 
+    // Exclude PRs where the author is a bot
+    if params.exclude_bot_authored && record.pr_author_is_bot {
+        return false;
+    }
+
+    // Minimum unique contributors in the repo
+    if let Some(min_contribs) = params.min_repo_contributors {
+        let count = snapshot.repo_contributor_counts
+            .get(&record.repo_name_idx)
+            .copied()
+            .unwrap_or(0);
+        if count < min_contribs {
+            return false;
+        }
+    }
+
+    // Cap on PRs per (repo, author, bot) triple
+    if let Some(max_prs) = params.max_author_repo_prs {
+        if record.author_idx != u32::MAX {
+            let count = snapshot.author_repo_counts
+                .get(&(record.repo_name_idx, record.author_idx, record.chatbot_idx))
+                .copied()
+                .unwrap_or(0);
+            if count > max_prs {
+                return false;
+            }
+        }
+    }
+
     true
 }
 

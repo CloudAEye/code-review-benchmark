@@ -3,7 +3,7 @@ mod tests {
     use crate::compute::*;
     use crate::model::*;
     use chrono::{NaiveDate, TimeZone, Utc};
-    use std::collections::BTreeMap;
+    use std::collections::{BTreeMap, HashMap};
 
     /// Helper: build a minimal snapshot with given chatbots and languages.
     fn make_snapshot(
@@ -38,6 +38,8 @@ mod tests {
             chatbots: chatbot_infos,
             languages: lang_strs,
             volumes: BTreeMap::new(),
+            repo_contributor_counts: HashMap::new(),
+            author_repo_counts: HashMap::new(),
         }
     }
 
@@ -60,6 +62,11 @@ mod tests {
             domain: None,
             pr_type: None,
             severity: None,
+            self_authored: false,
+            has_reviews: true,
+            pr_author_is_bot: false,
+            repo_name_idx: 0,
+            author_idx: 0,
         }
     }
 
@@ -414,5 +421,276 @@ mod tests {
         let resp_filtered = daily_metrics(&snap, &params_filtered);
         assert_eq!(resp_filtered.series.len(), 1);
         assert_eq!(resp_filtered.series[0].pr_count, 3, "should only count records with domain=Backend AND severity=High");
+    }
+
+    // -----------------------------------------------------------------------
+    // Quality filter tests: exclude_bot_authored, min_repo_contributors,
+    //                       max_author_repo_prs
+    // -----------------------------------------------------------------------
+
+    /// Build a snapshot that populates the aggregate maps needed for quality filters.
+    fn make_quality_snapshot(
+        chatbots: Vec<(&str, &str)>,
+        records: Vec<(NaiveDate, PrRecord)>,
+        repo_contributor_counts: HashMap<u32, u32>,
+        author_repo_counts: HashMap<(u32, u32, u8), u32>,
+    ) -> Snapshot {
+        let chatbot_infos: Vec<ChatbotInfo> = chatbots
+            .into_iter()
+            .map(|(user, display)| ChatbotInfo {
+                github_username: user.to_string(),
+                display_name: display.to_string(),
+                ignored: false,
+            })
+            .collect();
+
+        let mut by_date: BTreeMap<NaiveDate, Vec<PrRecord>> = BTreeMap::new();
+        for (date, rec) in records {
+            by_date.entry(date).or_default().push(rec);
+        }
+
+        Snapshot {
+            by_date,
+            no_date: Vec::new(),
+            chatbots: chatbot_infos,
+            languages: Vec::new(),
+            volumes: BTreeMap::new(),
+            repo_contributor_counts,
+            author_repo_counts,
+        }
+    }
+
+    #[test]
+    fn test_exclude_bot_authored() {
+        let mut r_human = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r_human.pr_author_is_bot = false;
+
+        let mut r_bot = rec(0, dt(2026, 2, 1), Some(0.8), Some(0.8));
+        r_bot.pr_author_is_bot = true;
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_human),
+                (date(2026, 2, 1), r_bot),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        // Without filter: both included
+        let params_off = FilterParams::default();
+        assert_eq!(apply_filters(&snap, &params_off).records.len(), 2);
+
+        // With filter: bot-authored excluded
+        let params_on = FilterParams {
+            exclude_bot_authored: true,
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params_on);
+        assert_eq!(result.records.len(), 1);
+        assert!(!result.records[0].1.pr_author_is_bot);
+    }
+
+    #[test]
+    fn test_min_repo_contributors() {
+        // repo 0 = solo contributor, repo 1 = 3 contributors
+        let mut r_solo = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r_solo.repo_name_idx = 0;
+
+        let mut r_diverse = rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7));
+        r_diverse.repo_name_idx = 1;
+
+        let mut repo_counts = HashMap::new();
+        repo_counts.insert(0u32, 1u32); // solo
+        repo_counts.insert(1u32, 3u32); // 3 contributors
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_solo),
+                (date(2026, 2, 1), r_diverse),
+            ],
+            repo_counts,
+            HashMap::new(),
+        );
+
+        // No filter: both included
+        assert_eq!(apply_filters(&snap, &FilterParams::default()).records.len(), 2);
+
+        // min_repo_contributors=2: solo repo excluded
+        let params = FilterParams {
+            min_repo_contributors: Some(2),
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(result.records[0].1.repo_name_idx, 1);
+
+        // min_repo_contributors=4: both excluded
+        let params_high = FilterParams {
+            min_repo_contributors: Some(4),
+            ..Default::default()
+        };
+        assert_eq!(apply_filters(&snap, &params_high).records.len(), 0);
+    }
+
+    #[test]
+    fn test_max_author_repo_prs() {
+        // author 0 in repo 0 has 100 PRs, author 1 in repo 0 has 5 PRs
+        let mut r_concentrated = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r_concentrated.repo_name_idx = 0;
+        r_concentrated.author_idx = 0;
+
+        let mut r_normal = rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7));
+        r_normal.repo_name_idx = 0;
+        r_normal.author_idx = 1;
+
+        let mut author_counts = HashMap::new();
+        author_counts.insert((0u32, 0u32, 0u8), 100u32);
+        author_counts.insert((0u32, 1u32, 0u8), 5u32);
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_concentrated),
+                (date(2026, 2, 1), r_normal),
+            ],
+            HashMap::new(),
+            author_counts,
+        );
+
+        // No filter: both included
+        assert_eq!(apply_filters(&snap, &FilterParams::default()).records.len(), 2);
+
+        // max_author_repo_prs=50: concentrated author excluded
+        let params = FilterParams {
+            max_author_repo_prs: Some(50),
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(result.records[0].1.author_idx, 1);
+
+        // max_author_repo_prs=200: both pass
+        let params_high = FilterParams {
+            max_author_repo_prs: Some(200),
+            ..Default::default()
+        };
+        assert_eq!(apply_filters(&snap, &params_high).records.len(), 2);
+    }
+
+    #[test]
+    fn test_max_author_repo_prs_unknown_author() {
+        // author_idx = u32::MAX means unknown author — should not be filtered
+        let mut r_unknown = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r_unknown.author_idx = u32::MAX;
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![(date(2026, 2, 1), r_unknown)],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        let params = FilterParams {
+            max_author_repo_prs: Some(10),
+            ..Default::default()
+        };
+        // Unknown author should pass (not in map, so not filtered)
+        assert_eq!(apply_filters(&snap, &params).records.len(), 1);
+    }
+
+    #[test]
+    fn test_combined_quality_filters() {
+        // Test all three quality filters together
+        let mut r1 = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r1.pr_author_is_bot = false;
+        r1.repo_name_idx = 0;
+        r1.author_idx = 0;
+
+        let mut r2_bot = rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6));
+        r2_bot.pr_author_is_bot = true; // will be excluded by exclude_bot_authored
+        r2_bot.repo_name_idx = 0;
+        r2_bot.author_idx = 1;
+
+        let mut r3_solo = rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7));
+        r3_solo.pr_author_is_bot = false;
+        r3_solo.repo_name_idx = 1; // solo repo
+        r3_solo.author_idx = 2;
+
+        let mut r4_concentrated = rec(0, dt(2026, 2, 1), Some(0.8), Some(0.8));
+        r4_concentrated.pr_author_is_bot = false;
+        r4_concentrated.repo_name_idx = 0;
+        r4_concentrated.author_idx = 3; // 200 PRs
+
+        let mut repo_counts = HashMap::new();
+        repo_counts.insert(0u32, 5u32);
+        repo_counts.insert(1u32, 1u32); // solo
+
+        let mut author_counts = HashMap::new();
+        author_counts.insert((0u32, 0u32, 0u8), 10u32);
+        author_counts.insert((0u32, 1u32, 0u8), 5u32);
+        author_counts.insert((1u32, 2u32, 0u8), 3u32);
+        author_counts.insert((0u32, 3u32, 0u8), 200u32);
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r1),
+                (date(2026, 2, 1), r2_bot),
+                (date(2026, 2, 1), r3_solo),
+                (date(2026, 2, 1), r4_concentrated),
+            ],
+            repo_counts,
+            author_counts,
+        );
+
+        let params = FilterParams {
+            exclude_bot_authored: true,
+            min_repo_contributors: Some(2),
+            max_author_repo_prs: Some(50),
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        // r1: human, diverse repo, 10 PRs → passes
+        // r2: bot-authored → excluded
+        // r3: solo repo → excluded
+        // r4: 200 PRs concentration → excluded
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(result.records[0].1.author_idx, 0);
+    }
+
+    #[test]
+    fn test_quality_filters_affect_leaderboard() {
+        // Bot-authored PRs inflate bot1's score; filtering them out changes the average
+        let mut r_human = rec(0, dt(2026, 2, 1), Some(0.4), Some(0.4));
+        r_human.pr_author_is_bot = false;
+
+        let mut r_bot_high = rec(0, dt(2026, 2, 1), Some(0.9), Some(0.9));
+        r_bot_high.pr_author_is_bot = true;
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_human),
+                (date(2026, 2, 1), r_bot_high),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        // Without filter: avg precision = (0.4 + 0.9) / 2 = 0.65
+        let resp_all = leaderboard(&snap, &FilterParams::default());
+        assert!((resp_all.rows[0].precision - 0.65).abs() < 0.001);
+
+        // With filter: avg precision = 0.4 only
+        let params = FilterParams {
+            exclude_bot_authored: true,
+            ..Default::default()
+        };
+        let resp_filtered = leaderboard(&snap, &params);
+        assert!((resp_filtered.rows[0].precision - 0.4).abs() < 0.001);
+        assert_eq!(resp_filtered.rows[0].sampled_prs, 1);
     }
 }
