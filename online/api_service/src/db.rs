@@ -96,6 +96,11 @@ const GENERAL_BOT_NAMES: &[&str] = &[
     "mergify", "snyk-bot", "greenkeeper", "imgbot",
     "stale", "allcontributors", "semantic-release-bot",
     "github-advanced-security",
+    "llamapreview", "ai-coding-guardrails",
+    "qodo-free-for-open-source-projects", "amazon-q-developer",
+    "sourceryai", "github-code-quality",
+    "copilot-pull-request-review", "raycastbot",
+    "cometactions", "kilo-code-bot", "codecov-comment",
 ];
 
 fn is_bot_username(username: &str, known_bots: &HashSet<String>) -> bool {
