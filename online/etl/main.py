@@ -913,6 +913,8 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
     import json as json_mod
     import time
 
+    from db.connection import DBAdapter
+    from db.schema import create_tables
     from pipeline.quality import compute_engagement_signals
 
     cfg = DBConfig(verbose=args.verbose)
