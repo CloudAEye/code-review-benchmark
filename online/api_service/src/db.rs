@@ -100,8 +100,8 @@ const GENERAL_BOT_NAMES: &[&str] = &[
     "github-advanced-security",
     "llamapreview", "ai-coding-guardrails",
     "qodo-free-for-open-source-projects", "amazon-q-developer",
-    "sourceryai", "github-code-quality",
-    "copilot-pull-request-review", "raycastbot",
+    "sourceryai", "github-code-quality", "copilot-pull-request-review",
+    "copilot-pull-request-reviewer", "raycastbot", "clawdbot",
     "cometactions", "kilo-code-bot", "codecov-comment",
 ];
 

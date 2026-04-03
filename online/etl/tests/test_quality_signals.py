@@ -32,6 +32,9 @@ from pipeline.quality import (
     ("cubic-dev-ai", True),
     ("gemini-code-assist", True),
     ("github-advanced-security", True),
+    ("copilot-pull-request-review", True),
+    ("copilot-pull-request-reviewer", True),
+    ("clawdbot", True),
 ])
 def test_is_bot_username(username: str, expected: bool) -> None:
     assert is_bot_username(username) == expected
