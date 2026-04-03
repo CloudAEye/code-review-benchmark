@@ -484,11 +484,24 @@ async def assemble_pr(
     chatbot_username: str,
 ) -> bool:
     """Assemble a single PR and save to DB. Returns True if successful."""
+    from pipeline.quality import serialize_engagement_signals
+
     record = assemble_pr_from_row(pr_row, chatbot_username)
     if record is None:
         return False
 
     await repo.mark_assembled(pr_row["id"], record)
+
+    # Compute and store engagement signals from the assembled timeline
+    engagement_json = serialize_engagement_signals(
+        record, chatbot_username, pr_author=record.get("pr_author"),
+    )
+    await repo.db.execute(
+        *repo.db._translate_params(
+            "UPDATE prs SET engagement_signals = $1 WHERE id = $2",
+            (engagement_json, pr_row["id"]),
+        )
+    )
 
     # Also update metadata from BQ events
     await repo.update_metadata(

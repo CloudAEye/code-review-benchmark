@@ -1,4 +1,4 @@
-"""Tests for per-PR quality signal computation."""
+"""Tests for per-PR quality and engagement signal computation."""
 
 from __future__ import annotations
 
@@ -10,158 +10,284 @@ from hypothesis import strategies as st
 
 from pipeline.quality import (
     is_bot_username,
-    compute_and_serialize,
-    compute_quality_signals,
+    compute_engagement_signals,
+    serialize_engagement_signals,
 )
 
 
-# -- _is_bot_username ---------------------------------------------------------
+# -- is_bot_username ----------------------------------------------------------
 
 @pytest.mark.parametrize("username,expected", [
     ("coderabbitai[bot]", True),
     ("dependabot[bot]", True),
-    ("Copilot", True),  # in DEFAULT_CHATBOT_USERNAMES
-    ("copilot", True),  # case insensitive
+    ("Copilot", True),
+    ("copilot", True),
     ("renovate", True),
     ("github-actions", True),
     ("alice", False),
     ("mybot", False),
     ("snyk-bot", True),
-    ("DEPENDABOT", True),  # case insensitive
+    ("DEPENDABOT", True),
     ("GitHub-Actions", True),
-    ("cubic-dev-ai", True),  # chatbot without [bot] suffix (BQ events)
-    ("gemini-code-assist", True),  # chatbot without [bot] suffix
-    ("github-advanced-security", True),  # general bot
+    ("cubic-dev-ai", True),
+    ("gemini-code-assist", True),
+    ("github-advanced-security", True),
 ])
 def test_is_bot_username(username: str, expected: bool) -> None:
     assert is_bot_username(username) == expected
 
 
-# -- compute_quality_signals --------------------------------------------------
+# -- helpers ------------------------------------------------------------------
 
-def _make_event(
+BOT = "coderabbitai[bot]"
+
+
+def _ev(
     event_type: str,
     actor: str,
     timestamp: str,
-    **data_kwargs: object,
+    body: str = "",
+    **extra: object,
 ) -> dict:
-    return {
-        "event_type": event_type,
-        "actor": actor,
-        "timestamp": timestamp,
-        "data": data_kwargs,
-    }
+    data: dict = {**extra}
+    if body:
+        data["body"] = body
+    return {"event_type": event_type, "actor": actor, "timestamp": timestamp, "data": data}
 
 
-def _make_assembled(
-    pr_author: str = "alice",
-    events: list[dict] | None = None,
-) -> dict:
-    return {
-        "pr_author": pr_author,
-        "events": events or [],
-    }
+def _asm(events: list[dict] | None = None, pr_author: str = "alice") -> dict:
+    return {"pr_author": pr_author, "events": events or []}
 
 
-class TestHasHumanEngagement:
-    """Test the has_human_engagement signal."""
+def _signals(events: list[dict], pr_author: str = "alice") -> dict:
+    return compute_engagement_signals(_asm(events, pr_author), BOT, pr_author=pr_author)
 
+
+# -- compute_engagement_signals: basic cases ----------------------------------
+
+class TestEngagementBasics:
     def test_no_events(self) -> None:
-        result = compute_quality_signals(_make_assembled(), "coderabbitai[bot]")
+        result = _signals([])
         assert result["has_human_engagement"] is False
+        assert result["human_reviewer_count"] == 0
+        assert result["human_comment_count"] == 0
+        assert result["back_and_forth_rounds"] == 0
+        assert result["commits_after_review"] == 0
 
     def test_only_bot_events(self) -> None:
         events = [
-            _make_event("review", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("review_comment", "coderabbitai[bot]", "2026-01-01T00:01:00Z"),
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("review_comment", BOT, "2026-01-01T00:01:00Z"),
         ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
+        result = _signals(events)
         assert result["has_human_engagement"] is False
-
-    def test_human_comment_after_bot_review(self) -> None:
-        events = [
-            _make_event("review", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("issue_comment", "alice", "2026-01-01T00:05:00Z"),
-        ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
-        assert result["has_human_engagement"] is True
-
-    def test_human_commit_after_bot_review(self) -> None:
-        events = [
-            _make_event("review", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("commit", "alice", "2026-01-01T01:00:00Z"),
-        ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
-        assert result["has_human_engagement"] is True
-
-    def test_human_comment_before_bot_review_only(self) -> None:
-        """Human activity only before the bot reviewed — doesn't count."""
-        events = [
-            _make_event("issue_comment", "alice", "2026-01-01T00:00:00Z"),
-            _make_event("review", "coderabbitai[bot]", "2026-01-01T00:10:00Z"),
-        ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
-        assert result["has_human_engagement"] is False
-
-    def test_another_bot_comment_doesnt_count(self) -> None:
-        """Another bot commenting after review isn't human engagement."""
-        events = [
-            _make_event("review", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("issue_comment", "dependabot[bot]", "2026-01-01T00:05:00Z"),
-        ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
-        assert result["has_human_engagement"] is False
-
-    def test_pr_event_doesnt_count_as_engagement(self) -> None:
-        """Non-comment/commit events (like pr_merged) from humans don't count."""
-        events = [
-            _make_event("review", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("pr_merged", "alice", "2026-01-01T01:00:00Z"),
-        ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
-        assert result["has_human_engagement"] is False
+        assert result["human_comment_count"] == 0
 
     def test_bot_no_review_events(self) -> None:
-        """If the bot only has non-review events, no engagement is tracked."""
+        """Bot only has commits, no review — engagement tracking doesn't start."""
         events = [
-            _make_event("commit", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("issue_comment", "alice", "2026-01-01T00:05:00Z"),
+            _ev("commit", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:05:00Z"),
         ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
+        result = _signals(events)
         assert result["has_human_engagement"] is False
 
-    def test_review_comment_counts_as_bot_review(self) -> None:
+    def test_human_activity_before_bot_review_only(self) -> None:
         events = [
-            _make_event("review_comment", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("issue_comment", "alice", "2026-01-01T00:05:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:00:00Z"),
+            _ev("review", BOT, "2026-01-01T00:10:00Z"),
         ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
+        result = _signals(events)
+        assert result["has_human_engagement"] is False
+
+    def test_other_bot_doesnt_count(self) -> None:
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "dependabot[bot]", "2026-01-01T00:05:00Z"),
+        ]
+        result = _signals(events)
+        assert result["has_human_engagement"] is False
+        assert result["human_comment_count"] == 0
+
+    def test_pr_event_doesnt_count(self) -> None:
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("pr_merged", "alice", "2026-01-01T01:00:00Z"),
+        ]
+        result = _signals(events)
+        assert result["has_human_engagement"] is False
+
+
+# -- comment counting and lengths --------------------------------------------
+
+class TestCommentMetrics:
+    def test_single_human_comment(self) -> None:
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:05:00Z", body="Looks good, thanks!"),
+        ]
+        result = _signals(events)
+        assert result["has_human_engagement"] is True
+        assert result["human_comment_count"] == 1
+        assert result["human_comment_total_length"] == len("Looks good, thanks!")
+
+    def test_multiple_comments_multiple_reviewers(self) -> None:
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("review_comment", "bob", "2026-01-01T00:05:00Z", body="Nice"),
+            _ev("issue_comment", "carol", "2026-01-01T00:06:00Z", body="LGTM"),
+            _ev("review_comment", "bob", "2026-01-01T00:07:00Z", body="One more thing"),
+        ]
+        result = _signals(events)
+        assert result["human_comment_count"] == 3
+        assert result["human_comment_total_length"] == len("Nice") + len("LGTM") + len("One more thing")
+        # bob and carol, but NOT alice (pr_author excluded from reviewer count)
+        assert result["human_reviewer_count"] == 2
+
+
+# -- reviewer count with pr_author exclusion ----------------------------------
+
+class TestReviewerCount:
+    def test_author_excluded_from_reviewer_count(self) -> None:
+        """PR author's comments count toward comment metrics but not reviewer count."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:05:00Z", body="Fixed"),
+        ]
+        result = _signals(events, pr_author="alice")
+        assert result["human_comment_count"] == 1
+        assert result["human_reviewer_count"] == 0  # only the author engaged
         assert result["has_human_engagement"] is True
 
-    def test_issue_comment_counts_as_bot_review(self) -> None:
+    def test_author_plus_reviewer(self) -> None:
         events = [
-            _make_event("issue_comment", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-            _make_event("review_comment", "alice", "2026-01-01T00:05:00Z"),
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:05:00Z", body="ok"),
+            _ev("review_comment", "bob", "2026-01-01T00:06:00Z", body="Looks right"),
         ]
-        result = compute_quality_signals(_make_assembled(events=events), "coderabbitai[bot]")
+        result = _signals(events, pr_author="alice")
+        assert result["human_reviewer_count"] == 1  # bob only
+        assert result["human_comment_count"] == 2
+
+    def test_no_pr_author_counts_all(self) -> None:
+        """When pr_author is None, all humans count as reviewers."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:05:00Z", body="ok"),
+        ]
+        result = compute_engagement_signals(_asm(events), BOT, pr_author=None)
+        assert result["human_reviewer_count"] == 1
+
+
+# -- commits after review ----------------------------------------------------
+
+class TestCommitsAfterReview:
+    def test_commits_counted(self) -> None:
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("commit", "alice", "2026-01-01T00:30:00Z"),
+            _ev("commit", "alice", "2026-01-01T00:45:00Z"),
+        ]
+        result = _signals(events)
+        assert result["commits_after_review"] == 2
         assert result["has_human_engagement"] is True
 
+    def test_commits_before_review_not_counted(self) -> None:
+        events = [
+            _ev("commit", "alice", "2026-01-01T00:00:00Z"),
+            _ev("review", BOT, "2026-01-01T00:10:00Z"),
+        ]
+        result = _signals(events)
+        assert result["commits_after_review"] == 0
 
-class TestSerialize:
+
+# -- back and forth rounds (review cycles) ------------------------------------
+
+class TestBackAndForthRounds:
+    def test_zero_rounds_no_human_response(self) -> None:
+        """Bot reviews, nobody responds = 0 rounds."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+        ]
+        result = _signals(events)
+        assert result["back_and_forth_rounds"] == 0
+
+    def test_zero_rounds_human_responds_bot_doesnt_follow_up(self) -> None:
+        """Bot reviews, human responds, bot doesn't review again = 0 rounds."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("commit", "alice", "2026-01-01T00:30:00Z"),
+        ]
+        result = _signals(events)
+        assert result["back_and_forth_rounds"] == 0
+
+    def test_one_round(self) -> None:
+        """Bot reviews → human commits → bot reviews again = 1 round."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("commit", "alice", "2026-01-01T00:30:00Z"),
+            _ev("review", BOT, "2026-01-01T01:00:00Z"),
+        ]
+        result = _signals(events)
+        assert result["back_and_forth_rounds"] == 1
+
+    def test_two_rounds(self) -> None:
+        """Two full cycles of bot→human→bot."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:10:00Z", body="fixing"),
+            _ev("commit", "alice", "2026-01-01T00:30:00Z"),
+            _ev("review_comment", BOT, "2026-01-01T01:00:00Z"),
+            _ev("commit", "alice", "2026-01-01T01:30:00Z"),
+            _ev("review", BOT, "2026-01-01T02:00:00Z"),
+        ]
+        result = _signals(events)
+        assert result["back_and_forth_rounds"] == 2
+
+    def test_consecutive_bot_reviews_count_once(self) -> None:
+        """Multiple bot reviews without human activity in between = still 1 transition."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("commit", "alice", "2026-01-01T00:30:00Z"),
+            _ev("review", BOT, "2026-01-01T01:00:00Z"),
+            _ev("review_comment", BOT, "2026-01-01T01:01:00Z"),
+        ]
+        result = _signals(events)
+        assert result["back_and_forth_rounds"] == 1
+
+    def test_human_comment_triggers_round(self) -> None:
+        """Human comment (not just commit) followed by bot review = round."""
+        events = [
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:10:00Z", body="I disagree"),
+            _ev("review_comment", BOT, "2026-01-01T00:20:00Z"),
+        ]
+        result = _signals(events)
+        assert result["back_and_forth_rounds"] == 1
+
+
+# -- serialization ------------------------------------------------------------
+
+class TestSerializeEngagement:
     def test_round_trip(self) -> None:
-        assembled = _make_assembled(
-            pr_author="alice",
-            events=[
-                _make_event("review", "coderabbitai[bot]", "2026-01-01T00:00:00Z"),
-                _make_event("issue_comment", "alice", "2026-01-01T00:05:00Z"),
-            ],
-        )
-        serialized = compute_and_serialize(assembled, "coderabbitai[bot]")
+        assembled = _asm([
+            _ev("review", BOT, "2026-01-01T00:00:00Z"),
+            _ev("issue_comment", "alice", "2026-01-01T00:05:00Z", body="Thanks"),
+            _ev("commit", "alice", "2026-01-01T00:30:00Z"),
+        ])
+        serialized = serialize_engagement_signals(assembled, BOT, pr_author="alice")
         parsed = json.loads(serialized)
-        assert parsed == {"has_human_engagement": True}
+        assert parsed["has_human_engagement"] is True
+        assert parsed["human_comment_count"] == 1
+        assert parsed["commits_after_review"] == 1
+        assert set(parsed.keys()) == {
+            "human_reviewer_count", "human_comment_count",
+            "human_comment_total_length", "back_and_forth_rounds",
+            "commits_after_review", "has_human_engagement",
+        }
 
 
-# -- Property-based tests ---------------------------------------------------
+# -- property-based tests ----------------------------------------------------
 
 _actor_strat = st.text(
     alphabet=st.characters(whitelist_categories=("L", "N"), whitelist_characters="-_[]"),
@@ -183,19 +309,26 @@ _event_type_strat = st.sampled_from(["review", "review_comment", "issue_comment"
     ),
 )
 @settings(max_examples=200)
-def test_signals_always_valid_structure(
+def test_engagement_signals_always_valid_structure(
     pr_author: str,
     chatbot: str,
     events: list[tuple[str, str, str]],
 ) -> None:
-    """Quality signals always return the expected keys with boolean values."""
-    assembled = _make_assembled(
+    """Engagement signals always return the expected keys with correct types."""
+    assembled = _asm(
+        events=[_ev(et, actor, ts) for et, actor, ts in events],
         pr_author=pr_author,
-        events=[_make_event(et, actor, ts) for et, actor, ts in events],
     )
-    result = compute_quality_signals(assembled, chatbot)
-    assert set(result.keys()) == {"has_human_engagement"}
+    result = compute_engagement_signals(assembled, chatbot, pr_author=pr_author)
+    expected_keys = {
+        "human_reviewer_count", "human_comment_count",
+        "human_comment_total_length", "back_and_forth_rounds",
+        "commits_after_review", "has_human_engagement",
+    }
+    assert set(result.keys()) == expected_keys
     assert isinstance(result["has_human_engagement"], bool)
+    assert all(isinstance(result[k], int) for k in expected_keys - {"has_human_engagement"})
+    assert all(result[k] >= 0 for k in expected_keys - {"has_human_engagement"})
 
 
 @given(
@@ -206,9 +339,11 @@ def test_signals_always_valid_structure(
 def test_bot_only_never_has_engagement(chatbot: str, n_bot_only: int) -> None:
     """If all events are from the chatbot, there can be no human engagement."""
     events = [
-        _make_event("review_comment", chatbot, f"2026-01-01T00:{i:02d}:00Z")
+        _ev("review_comment", chatbot, f"2026-01-01T00:{i:02d}:00Z")
         for i in range(n_bot_only)
     ]
-    assembled = _make_assembled(pr_author="alice", events=events)
-    result = compute_quality_signals(assembled, chatbot)
+    result = compute_engagement_signals(_asm(events=events), chatbot)
     assert result["has_human_engagement"] is False
+    assert result["human_comment_count"] == 0
+    assert result["commits_after_review"] == 0
+    assert result["back_and_forth_rounds"] == 0

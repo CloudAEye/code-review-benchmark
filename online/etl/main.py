@@ -241,6 +241,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_bar.add_argument("--dry-run", action="store_true", help="Show what would change without writing")
     p_bar.add_argument("--verbose", action="store_true")
 
+    # backfill-engagement
+    p_bfe = sub.add_parser("backfill-engagement", help="Compute engagement_signals for assembled PRs missing them")
+    p_bfe.add_argument("--database-url")
+    p_bfe.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
+    p_bfe.add_argument("--batch-size", type=int, default=5000)
+    p_bfe.add_argument("--dry-run", action="store_true")
+    p_bfe.add_argument("--verbose", action="store_true")
+
     # dashboard
     p_dash = sub.add_parser("dashboard", help="Launch Streamlit dashboard")
     p_dash.add_argument("--port", type=int, default=8501)
@@ -896,6 +904,105 @@ async def cmd_backfill_api_raw(args: argparse.Namespace) -> None:
         await db.close()
 
 
+async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
+    """Compute engagement_signals for assembled PRs that don't have them yet.
+
+    Uses cursor-based pagination (keyset on p.id) to avoid loading all assembled
+    JSON into memory at once.
+    """
+    import json as json_mod
+    import time
+
+    from pipeline.quality import compute_engagement_signals
+
+    cfg = DBConfig(verbose=args.verbose)
+    db_url = args.database_url or cfg.database_url
+    db = DBAdapter(db_url)
+    await db.connect()
+    await create_tables(db)
+
+    try:
+        # Get total count first (cheap — no assembled JSON loaded)
+        count_row = await db.fetchone("""
+            SELECT COUNT(*) as cnt FROM prs p
+            WHERE p.assembled IS NOT NULL AND p.engagement_signals IS NULL
+        """)
+        total = count_row["cnt"] if count_row else 0
+        logger.info(f"Found {total} assembled PRs missing engagement_signals")
+
+        if total == 0:
+            return
+
+        batch_size = args.batch_size
+        updated = 0
+        last_id = 0
+        last_log = time.time()
+        limit = args.limit
+
+        while True:
+            if limit is not None and updated >= limit:
+                break
+
+            fetch_size = batch_size
+            if limit is not None:
+                fetch_size = min(batch_size, limit - updated)
+
+            rows = await db.fetchall(f"""
+                SELECT p.id, p.assembled, p.pr_author, c.github_username AS chatbot
+                FROM prs p
+                JOIN chatbots c ON c.id = p.chatbot_id
+                WHERE p.assembled IS NOT NULL
+                  AND p.engagement_signals IS NULL
+                  AND p.id > {last_id}
+                ORDER BY p.id
+                LIMIT {fetch_size}
+            """)
+
+            if not rows:
+                break
+
+            if args.dry_run:
+                for row in rows[:10]:
+                    assembled = json_mod.loads(row["assembled"])
+                    signals = compute_engagement_signals(
+                        assembled, row["chatbot"], pr_author=row.get("pr_author"),
+                    )
+                    logger.info(
+                        f"  [DRY] id={row['id']}: reviewers={signals['human_reviewer_count']} "
+                        f"comments={signals['human_comment_count']} "
+                        f"rounds={signals['back_and_forth_rounds']} "
+                        f"commits={signals['commits_after_review']} "
+                        f"engaged={signals['has_human_engagement']}"
+                    )
+                logger.info(f"DRY RUN — would process {total} PRs (showed first {min(10, len(rows))})")
+                return
+
+            for row in rows:
+                assembled = json_mod.loads(row["assembled"])
+                signals = compute_engagement_signals(
+                    assembled, row["chatbot"], pr_author=row.get("pr_author"),
+                )
+                signals_json = json_mod.dumps(signals)
+                await db.execute(
+                    *db._translate_params(
+                        "UPDATE prs SET engagement_signals = $1 WHERE id = $2",
+                        (signals_json, row["id"]),
+                    )
+                )
+                updated += 1
+
+            last_id = rows[-1]["id"]
+
+            now = time.time()
+            if now - last_log >= 15:
+                logger.info(f"  Progress: {updated}/{total}")
+                last_log = now
+
+        logger.info(f"DONE — backfill-engagement: {updated} PRs updated")
+    finally:
+        await db.close()
+
+
 async def cmd_import(args: argparse.Namespace) -> None:
     from migration.import_filesystem import import_all
 
@@ -950,6 +1057,8 @@ def main() -> None:
         asyncio.run(cmd_backfill_metadata(args))
     elif args.command == "backfill-api-raw":
         asyncio.run(cmd_backfill_api_raw(args))
+    elif args.command == "backfill-engagement":
+        asyncio.run(cmd_backfill_engagement(args))
     elif args.command == "import":
         asyncio.run(cmd_import(args))
 
