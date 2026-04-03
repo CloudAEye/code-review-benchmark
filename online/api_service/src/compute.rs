@@ -148,6 +148,21 @@ fn record_matches(record: &PrRecord, snapshot: &Snapshot, params: &FilterParams)
         }
     }
 
+    // Engagement filters
+    if params.require_human_engagement && !record.has_human_engagement {
+        return false;
+    }
+    if let Some(min_rev) = params.min_human_reviewers {
+        if (record.human_reviewer_count as u32) < min_rev {
+            return false;
+        }
+    }
+    if let Some(min_commits) = params.min_commits_after_review {
+        if (record.commits_after_review as u32) < min_commits {
+            return false;
+        }
+    }
+
     true
 }
 

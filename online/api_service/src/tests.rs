@@ -67,6 +67,9 @@ mod tests {
             pr_author_is_bot: false,
             repo_name_idx: 0,
             author_idx: 0,
+            has_human_engagement: false,
+            human_reviewer_count: 0,
+            commits_after_review: 0,
         }
     }
 
@@ -692,5 +695,140 @@ mod tests {
         let resp_filtered = leaderboard(&snap, &params);
         assert!((resp_filtered.rows[0].precision - 0.4).abs() < 0.001);
         assert_eq!(resp_filtered.rows[0].sampled_prs, 1);
+    }
+
+    // -----------------------------------------------------------------------
+    // Engagement filter tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_require_human_engagement() {
+        let mut r_engaged = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r_engaged.has_human_engagement = true;
+        r_engaged.human_reviewer_count = 1;
+
+        let r_no_engage = rec(0, dt(2026, 2, 1), Some(0.8), Some(0.8));
+        // defaults: has_human_engagement = false
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_engaged),
+                (date(2026, 2, 1), r_no_engage),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        // Without filter: both included
+        assert_eq!(apply_filters(&snap, &FilterParams::default()).records.len(), 2);
+
+        // With filter: only engaged PR passes
+        let params = FilterParams {
+            require_human_engagement: true,
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert!(result.records[0].1.has_human_engagement);
+    }
+
+    #[test]
+    fn test_min_human_reviewers() {
+        let mut r0 = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r0.human_reviewer_count = 0;
+
+        let mut r1 = rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6));
+        r1.human_reviewer_count = 1;
+
+        let mut r3 = rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7));
+        r3.human_reviewer_count = 3;
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r0),
+                (date(2026, 2, 1), r1),
+                (date(2026, 2, 1), r3),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        let params = FilterParams {
+            min_human_reviewers: Some(2),
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(result.records[0].1.human_reviewer_count, 3);
+    }
+
+    #[test]
+    fn test_min_commits_after_review() {
+        let mut r0 = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+        r0.commits_after_review = 0;
+
+        let mut r2 = rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6));
+        r2.commits_after_review = 2;
+
+        let mut r5 = rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7));
+        r5.commits_after_review = 5;
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r0),
+                (date(2026, 2, 1), r2),
+                (date(2026, 2, 1), r5),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        let params = FilterParams {
+            min_commits_after_review: Some(3),
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        assert_eq!(result.records.len(), 1);
+        assert_eq!(result.records[0].1.commits_after_review, 5);
+    }
+
+    #[test]
+    fn test_engagement_filters_combined() {
+        let mut r_full = rec(0, dt(2026, 2, 1), Some(0.9), Some(0.9));
+        r_full.has_human_engagement = true;
+        r_full.human_reviewer_count = 2;
+        r_full.commits_after_review = 3;
+
+        let mut r_partial = rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7));
+        r_partial.has_human_engagement = true;
+        r_partial.human_reviewer_count = 0;
+        r_partial.commits_after_review = 1;
+
+        let r_none = rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5));
+
+        let snap = make_quality_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![
+                (date(2026, 2, 1), r_full),
+                (date(2026, 2, 1), r_partial),
+                (date(2026, 2, 1), r_none),
+            ],
+            HashMap::new(),
+            HashMap::new(),
+        );
+
+        let params = FilterParams {
+            require_human_engagement: true,
+            min_human_reviewers: Some(1),
+            min_commits_after_review: Some(2),
+            ..Default::default()
+        };
+        let result = apply_filters(&snap, &params);
+        // Only r_full passes all three
+        assert_eq!(result.records.len(), 1);
+        assert!((result.records[0].1.precision.unwrap() - 0.9).abs() < 0.001);
     }
 }

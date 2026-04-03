@@ -25,7 +25,8 @@ pub async fn load_from_postgres(database_url: &str) -> anyhow::Result<Snapshot> 
                c.github_username,
                c.display_name,
                pl.labels as pr_labels_json,
-               (p.reviews IS NOT NULL AND p.reviews != '[]') as has_reviews
+               (p.reviews IS NOT NULL AND p.reviews != '[]') as has_reviews,
+               p.engagement_signals
         FROM llm_analyses la
         JOIN prs p ON la.pr_id = p.id
         JOIN chatbots c ON la.chatbot_id = c.id
@@ -80,6 +81,7 @@ struct RawRow {
     display_name: Option<String>,
     pr_labels_json: Option<String>,
     has_reviews: Option<bool>,
+    engagement_signals: Option<String>,
 }
 
 #[derive(sqlx::FromRow)]
@@ -197,6 +199,9 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             None => u32::MAX,
         };
 
+        let (has_human_engagement, human_reviewer_count, commits_after_review) =
+            parse_engagement_signals(row.engagement_signals.as_deref());
+
         let record = PrRecord {
             chatbot_idx,
             bot_reviewed_at: row.bot_reviewed_at,
@@ -212,6 +217,9 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
             pr_author_is_bot,
             repo_name_idx,
             author_idx,
+            has_human_engagement,
+            human_reviewer_count,
+            commits_after_review,
         };
 
         match row.bot_reviewed_at {
@@ -280,6 +288,21 @@ fn build_snapshot(rows: Vec<RawRow>, volume_rows: Vec<VolumeRawRow>, ignored_use
         repo_contributor_counts,
         author_repo_counts,
     })
+}
+
+fn parse_engagement_signals(json_str: Option<&str>) -> (bool, u8, u16) {
+    let json_str = match json_str {
+        Some(s) if !s.is_empty() => s,
+        _ => return (false, 0, 0),
+    };
+    let obj: serde_json::Value = match serde_json::from_str(json_str) {
+        Ok(v) => v,
+        Err(_) => return (false, 0, 0),
+    };
+    let engaged = obj.get("has_human_engagement").and_then(|v| v.as_bool()).unwrap_or(false);
+    let reviewers = obj.get("human_reviewer_count").and_then(|v| v.as_u64()).unwrap_or(0) as u8;
+    let commits = obj.get("commits_after_review").and_then(|v| v.as_u64()).unwrap_or(0) as u16;
+    (engaged, reviewers, commits)
 }
 
 fn parse_labels(

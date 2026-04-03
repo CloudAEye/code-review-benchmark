@@ -99,6 +99,10 @@ pub struct PrRecord {
     pub repo_name_idx: u32,
     /// Index into Snapshot.authors (lowercased), or u32::MAX if unknown
     pub author_idx: u32,
+    // Engagement signals (from engagement_signals JSON column)
+    pub has_human_engagement: bool,
+    pub human_reviewer_count: u8,
+    pub commits_after_review: u16,
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +165,12 @@ pub struct FilterParams {
     pub min_repo_contributors: Option<u32>,
     /// Cap: exclude PRs where (repo, author, bot) triple exceeds this count
     pub max_author_repo_prs: Option<u32>,
+    /// Only include PRs with human engagement (comments or commits after bot review)
+    pub require_human_engagement: bool,
+    /// Minimum distinct human reviewers (excluding PR author)
+    pub min_human_reviewers: Option<u32>,
+    /// Minimum commits after bot review
+    pub min_commits_after_review: Option<u32>,
 }
 
 impl Default for FilterParams {
@@ -184,6 +194,9 @@ impl Default for FilterParams {
             exclude_bot_authored: false,
             min_repo_contributors: None,
             max_author_repo_prs: None,
+            require_human_engagement: false,
+            min_human_reviewers: None,
+            min_commits_after_review: None,
         }
     }
 }

@@ -32,6 +32,9 @@ pub struct MetricsQuery {
     pub exclude_bot_authored: Option<bool>,
     pub min_repo_contributors: Option<u32>,
     pub max_author_repo_prs: Option<u32>,
+    pub require_human_engagement: Option<bool>,
+    pub min_human_reviewers: Option<u32>,
+    pub min_commits_after_review: Option<u32>,
 }
 
 fn parse_date(s: &str) -> Option<NaiveDate> {
@@ -80,6 +83,9 @@ fn to_filter_params(q: &MetricsQuery) -> FilterParams {
         exclude_bot_authored: q.exclude_bot_authored.unwrap_or(false),
         min_repo_contributors: q.min_repo_contributors,
         max_author_repo_prs: q.max_author_repo_prs,
+        require_human_engagement: q.require_human_engagement.unwrap_or(false),
+        min_human_reviewers: q.min_human_reviewers,
+        min_commits_after_review: q.min_commits_after_review,
     }
 }
 
