@@ -246,6 +246,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_bfe.add_argument("--database-url")
     p_bfe.add_argument("--limit", type=int, default=None, help="Limit PRs to process")
     p_bfe.add_argument("--batch-size", type=int, default=5000)
+    p_bfe.add_argument("--status-filter", default="analyzed", help="Only process PRs with this status (default: analyzed)")
     p_bfe.add_argument("--dry-run", action="store_true")
     p_bfe.add_argument("--verbose", action="store_true")
 
@@ -924,10 +925,13 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
     await create_tables(db)
 
     try:
+        status_filter = args.status_filter
+
         # Get total count first (cheap — no assembled JSON loaded)
-        count_row = await db.fetchone("""
+        count_row = await db.fetchone(f"""
             SELECT COUNT(*) as cnt FROM prs p
             WHERE p.assembled IS NOT NULL AND p.engagement_signals IS NULL
+              AND p.status = '{status_filter}'
         """)
         total = count_row["cnt"] if count_row else 0
         logger.info(f"Found {total} assembled PRs missing engagement_signals")
@@ -955,6 +959,7 @@ async def cmd_backfill_engagement(args: argparse.Namespace) -> None:
                 JOIN chatbots c ON c.id = p.chatbot_id
                 WHERE p.assembled IS NOT NULL
                   AND p.engagement_signals IS NULL
+                  AND p.status = '{status_filter}'
                   AND p.id > {last_id}
                 ORDER BY p.id
                 LIMIT {fetch_size}
