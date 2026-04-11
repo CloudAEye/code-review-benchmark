@@ -48,7 +48,6 @@ TRIGGER_COMMENT_TOOLS = frozenset(
         "gemini",
         "greptile-v4",
         "kodus-v2",
-        "mergemonkey",
         "mesa",
         "propel",
         "qodo-v2",
