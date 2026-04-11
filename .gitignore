@@ -23,6 +23,7 @@ target/
 # Output data
 output/
 results/
+analysis/*
 
 # Generated exports
 *.xlsx
@@ -30,6 +31,7 @@ results/
 # Test and coverage
 .pytest_cache/
 .coverage
+.hypothesis/
 htmlcov/
 
 # Linters
