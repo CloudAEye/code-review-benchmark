@@ -171,7 +171,8 @@ MARK_PR_SKIPPED = """
 """
 
 UPDATE_PR_METADATA = """
-    UPDATE prs SET pr_title = $1, pr_author = $2, pr_created_at = $3, pr_merged = $4
+    UPDATE prs SET pr_title = $1, pr_author = $2, pr_created_at = $3,
+                   pr_merged = COALESCE($4, pr_merged)
     WHERE id = $5
 """
 

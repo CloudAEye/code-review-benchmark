@@ -114,9 +114,13 @@ async def _update_pr_and_roles(
 
     if not dry_run:
         if pr_api_raw is not None:
+            pr_merged = pr_api_raw.get("merged")
+            repo_id = (pr_api_raw.get("base") or {}).get("repo", {}).get("id")
             await db.execute(*db._translate_params(
-                "UPDATE prs SET pr_author = $1, pr_api_raw = $2 WHERE id = $3",
-                (author, json.dumps(pr_api_raw), pr_id),
+                "UPDATE prs SET pr_author = $1, pr_api_raw = $2, "
+                "pr_merged = COALESCE($3, pr_merged), "
+                "repo_id = COALESCE(repo_id, $4) WHERE id = $5",
+                (author, json.dumps(pr_api_raw), pr_merged, repo_id, pr_id),
             ))
         else:
             await db.execute(*db._translate_params(
