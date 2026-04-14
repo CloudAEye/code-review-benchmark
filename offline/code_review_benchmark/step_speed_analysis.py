@@ -52,8 +52,9 @@ TRIGGER_COMMENT_TOOLS = frozenset(
         "propel",
         "qodo-v2",
         "qodo-extended",
-        "qodo-extended-summary",
+        "qodo-extended-v2",
         "sourcery",
+        "codeant-v2",
     }
 )
 
@@ -61,7 +62,6 @@ TRIGGER_COMMENT_TOOLS = frozenset(
 IGNORE_TOOLS = frozenset(
     {
         "linearb",
-        "macroscope",
         "vercel",
         "sentry",
         "bito",
