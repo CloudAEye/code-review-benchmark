@@ -76,8 +76,6 @@ class DBAdapter:
         s = s.replace("JSONB", "TEXT")
         s = s.replace("NOW()", "datetime('now')")
         s = s.replace("BOOLEAN", "INTEGER")
-        # Protect CURRENT_TIMESTAMP (valid in both Postgres and SQLite) before
-        # replacing TIMESTAMP type keywords, then restore it.
         s = s.replace("CURRENT_TIMESTAMP", "__CURRENT_TS__")
         s = s.replace("TIMESTAMPTZ", "TEXT")
         s = s.replace("TIMESTAMP", "TEXT")
