@@ -25,6 +25,9 @@ output/
 results/
 analysis/*
 
+# Local scripts
+online/etl/scripts/
+
 # Generated exports
 *.xlsx
 
