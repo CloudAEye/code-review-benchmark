@@ -128,12 +128,12 @@ class GitHubEnrichClient:
                         logger.warning(f"{resp.status_code} for {url} — skipping")
                         return None
                     if resp.status_code == 301:
-                        location = resp.headers.get("Location", "unknown")
-                        raise httpx.HTTPStatusError(
-                            f"301 Moved Permanently (repo likely renamed) → {location}",
-                            request=resp.request,
-                            response=resp,
-                        )
+                        location = resp.headers.get("Location")
+                        if location:
+                            logger.info(f"Following 301 redirect: {url} → {location}")
+                            url = location
+                            continue
+                        return None
                     if resp.status_code >= 500:
                         wait = 2**attempt
                         logger.warning(f"{resp.status_code} on {url}, retrying in {wait}s")
@@ -211,8 +211,9 @@ class GitHubEnrichClient:
 # -- Enrichment sub-steps (return JSONB-ready data) ----------------------------
 
 
-async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> list[dict]:
-    path = f"/repos/{owner}/{repo}/pulls/{pr_number}/commits"
+async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> list[dict]:
+    base = repo_path or f"/repos/{owner}/{repo}"
+    path = f"{base}/pulls/{pr_number}/commits"
     raw = await gh.rest_get_paginated(path)
     return [
         {
@@ -225,8 +226,9 @@ async def _fetch_commits(gh: GitHubEnrichClient, owner: str, repo: str, pr_numbe
     ]
 
 
-async def _fetch_reviews(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> list[dict]:
-    path = f"/repos/{owner}/{repo}/pulls/{pr_number}/reviews"
+async def _fetch_reviews(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> list[dict]:
+    base = repo_path or f"/repos/{owner}/{repo}"
+    path = f"{base}/pulls/{pr_number}/reviews"
     raw = await gh.rest_get_paginated(path)
     return [
         {
@@ -287,8 +289,9 @@ async def _fetch_review_threads(gh: GitHubEnrichClient, owner: str, repo: str, p
     return all_threads
 
 
-async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str) -> dict:
-    resp = await gh.rest_get(f"/repos/{owner}/{repo}/commits/{sha}")
+async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: str, *, repo_path: str = "") -> dict:
+    base = repo_path or f"/repos/{owner}/{repo}"
+    resp = await gh.rest_get(f"{base}/commits/{sha}")
     if resp is None:
         return {"sha": sha, "files": []}
     data = resp.json()
@@ -306,19 +309,20 @@ async def _fetch_one_commit(gh: GitHubEnrichClient, owner: str, repo: str, sha: 
     return {"sha": sha, "files": files}
 
 
-async def _fetch_commit_details(gh: GitHubEnrichClient, owner: str, repo: str, commits: list[dict]) -> list[dict]:
+async def _fetch_commit_details(gh: GitHubEnrichClient, owner: str, repo: str, commits: list[dict], *, repo_path: str = "") -> list[dict]:
     if not commits:
         return []
-    tasks = [_fetch_one_commit(gh, owner, repo, c["sha"]) for c in commits]
+    tasks = [_fetch_one_commit(gh, owner, repo, c["sha"], repo_path=repo_path) for c in commits]
     return list(await asyncio.gather(*tasks))
 
 
 # -- PR summary (lightweight size check) ---------------------------------------
 
 
-async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int) -> dict | None:
+async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_number: int, *, repo_path: str = "") -> dict | None:
     """Fetch PR summary (1 API call) to check size before full enrichment."""
-    resp = await gh.rest_get(f"/repos/{owner}/{repo}/pulls/{pr_number}")
+    base = repo_path or f"/repos/{owner}/{repo}"
+    resp = await gh.rest_get(f"{base}/pulls/{pr_number}")
     if resp is None:
         return None
     data = resp.json()
@@ -327,6 +331,10 @@ async def _fetch_pr_summary(gh: GitHubEnrichClient, owner: str, repo: str, pr_nu
         "deletions": data.get("deletions", 0),
         "commits": data.get("commits", 0),
         "changed_files": data.get("changed_files", 0),
+        "pr_author": (data.get("user") or {}).get("login"),
+        "merged": data.get("merged"),
+        "repo_id": (data.get("base") or {}).get("repo", {}).get("id"),
+        "raw": data,
     }
 
 
@@ -414,11 +422,27 @@ async def enrich_single_pr(
     step_idx = _step_index(current_step)
 
     owner, repo = repo_name.split("/", 1)
+    repo_id = pr_row.get("repo_id")
+    repo_path = f"/repositories/{repo_id}" if repo_id else f"/repos/{owner}/{repo}"
 
     # Size check: fetch PR summary and skip if too large
     if cfg is not None and step_idx < 1:
-        summary = await _fetch_pr_summary(gh, owner, repo, pr_number)
+        summary = await _fetch_pr_summary(gh, owner, repo, pr_number, repo_path=repo_path)
         if summary is not None:
+            # Backfill pr_author from GitHub API if missing from BQ events
+            if not pr_row.get("pr_author") and summary.get("pr_author"):
+                await repo_obj.update_pr_author(pr_id, summary["pr_author"])
+
+            # Store pr_api_raw, pr_merged, repo_id from the API response
+            await repo_obj.db.execute(
+                *repo_obj.db._translate_params(
+                    "UPDATE prs SET pr_api_raw = COALESCE(pr_api_raw, $1), "
+                    "pr_merged = COALESCE($2, pr_merged), "
+                    "repo_id = COALESCE(repo_id, $3) WHERE id = $4",
+                    (json.dumps(summary["raw"]), summary["merged"], summary["repo_id"], pr_id),
+                )
+            )
+
             total_lines = summary["additions"] + summary["deletions"]
             if summary["commits"] > cfg.max_pr_commits:
                 reason = f"Too many commits: {summary['commits']} > {cfg.max_pr_commits}"
@@ -433,13 +457,13 @@ async def enrich_single_pr(
 
     # Step: commits (index 1)
     if step_idx < 1:
-        commits = await _fetch_commits(gh, owner, repo, pr_number)
+        commits = await _fetch_commits(gh, owner, repo, pr_number, repo_path=repo_path)
         await repo_obj.update_commits(pr_id, commits)
         logger.debug(f"  {repo_name}#{pr_number}: commits done ({len(commits)})")
 
     # Step: reviews (index 2)
     if step_idx < 2:
-        reviews = await _fetch_reviews(gh, owner, repo, pr_number)
+        reviews = await _fetch_reviews(gh, owner, repo, pr_number, repo_path=repo_path)
         await repo_obj.update_reviews(pr_id, reviews)
         logger.debug(f"  {repo_name}#{pr_number}: reviews done ({len(reviews)})")
 
@@ -461,7 +485,7 @@ async def enrich_single_pr(
             commits_json = refreshed.get("commits") if refreshed else None
             commits_data = json.loads(commits_json) if commits_json else []
 
-        details = await _fetch_commit_details(gh, owner, repo, commits_data)
+        details = await _fetch_commit_details(gh, owner, repo, commits_data, repo_path=repo_path)
         await repo_obj.update_commit_details(pr_id, details)
         logger.debug(f"  {repo_name}#{pr_number}: commit details done")
 

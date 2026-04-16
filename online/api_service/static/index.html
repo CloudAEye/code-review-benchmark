@@ -51,6 +51,20 @@ tr:hover td{background:#f9f9f9}
     <div><input type="number" id="diff-min" value="0" min="0" step="50"></div>
     <div><input type="number" id="diff-max" value="2000" min="0" step="50"></div>
   </div>
+  <h3>Quality Filters</h3>
+  <label><input type="checkbox" id="exclude-self-authored"> Exclude self-authored</label>
+  <label><input type="checkbox" id="exclude-bot-authored"> Exclude bot-authored</label>
+  <label><input type="checkbox" id="require-reviews"> Require reviews</label>
+  <label>Min repo contributors</label>
+  <input type="number" id="min-repo-contributors" value="" min="0" step="1" placeholder="e.g. 2">
+  <label>Max PRs per (repo, author, bot)</label>
+  <input type="number" id="max-author-repo-prs" value="" min="0" step="1" placeholder="e.g. 50">
+  <h3>Engagement Filters</h3>
+  <label><input type="checkbox" id="require-human-engagement"> Require human engagement</label>
+  <label>Min human reviewers</label>
+  <input type="number" id="min-human-reviewers" value="" min="0" step="1" placeholder="e.g. 1">
+  <label>Min commits after review</label>
+  <input type="number" id="min-commits-after-review" value="" min="0" step="1" placeholder="e.g. 1">
   <h3>Label Filters</h3>
   <label>Domain</label><div class="cb-group" id="f-domain"></div>
   <label>Language</label><input type="text" class="search-input" placeholder="Type to filter..." oninput="filterCbs('f-language',this.value)"><div class="cb-group" id="f-language"></div>
@@ -126,7 +140,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','include-ignored'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','exclude-self-authored','exclude-bot-authored','require-reviews','include-ignored','min-repo-contributors','max-author-repo-prs'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
@@ -144,6 +158,18 @@ function qs(){
   const dmin=$('#diff-min').value, dmax=$('#diff-max').value;
   if(dmin&&dmin!=='0') p.set('diff_lines_min',dmin);
   if(dmax) p.set('diff_lines_max',dmax);
+  if($('#exclude-self-authored').checked) p.set('exclude_self_authored','true');
+  if($('#exclude-bot-authored').checked) p.set('exclude_bot_authored','true');
+  if($('#require-reviews').checked) p.set('require_reviews','true');
+  const mrc=$('#min-repo-contributors').value;
+  if(mrc&&mrc!=='0') p.set('min_repo_contributors',mrc);
+  const marp=$('#max-author-repo-prs').value;
+  if(marp&&marp!=='0') p.set('max_author_repo_prs',marp);
+  if($('#require-human-engagement').checked) p.set('require_human_engagement','true');
+  const mhr=$('#min-human-reviewers').value;
+  if(mhr&&mhr!=='0') p.set('min_human_reviewers',mhr);
+  const mcar=$('#min-commits-after-review').value;
+  if(mcar&&mcar!=='0') p.set('min_commits_after_review',mcar);
   const j=(cls,key)=>{const v=checked(cls);if(v.length)p.set(key,v.join(','));};
   j('cb-bot','chatbot');j('cb-dom','domain');j('cb-lang','language');j('cb-prt','pr_type');j('cb-sev','severity');
   if($('#include-ignored').checked) p.set('include_ignored','true');

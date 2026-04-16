@@ -76,9 +76,10 @@ class DBAdapter:
         s = s.replace("JSONB", "TEXT")
         s = s.replace("NOW()", "datetime('now')")
         s = s.replace("BOOLEAN", "INTEGER")
+        s = s.replace("CURRENT_TIMESTAMP", "__CURRENT_TS__")
         s = s.replace("TIMESTAMPTZ", "TEXT")
         s = s.replace("TIMESTAMP", "TEXT")
-        s = s.replace("CURRENT_TEXT", "datetime('now')")
+        s = s.replace("__CURRENT_TS__", "CURRENT_TIMESTAMP")
         # Remove Postgres-specific DEFAULT true/false for boolean columns
         s = s.replace("DEFAULT TRUE", "DEFAULT 1")
         s = s.replace("DEFAULT FALSE", "DEFAULT 0")

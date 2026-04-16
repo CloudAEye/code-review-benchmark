@@ -1,6 +1,8 @@
 use std::collections::{HashMap, HashSet};
 
 use chrono::NaiveDate;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
 
 use crate::model::*;
 
@@ -109,6 +111,50 @@ fn record_matches(record: &PrRecord, snapshot: &Snapshot, params: &FilterParams)
         }
     }
 
+    // Exclude self-authored PRs (bot reviewing its own PR)
+    if params.exclude_self_authored && record.self_authored {
+        return false;
+    }
+
+    // Require non-empty reviews
+    if params.require_reviews && !record.has_reviews {
+        return false;
+    }
+
+    // Exclude PRs where the author is a bot
+    if params.exclude_bot_authored && record.pr_author_is_bot {
+        return false;
+    }
+
+    // Minimum unique contributors in the repo
+    if let Some(min_contribs) = params.min_repo_contributors {
+        let count = snapshot.repo_contributor_counts
+            .get(&record.repo_name_idx)
+            .copied()
+            .unwrap_or(0);
+        if count < min_contribs {
+            return false;
+        }
+    }
+
+    // NOTE: max_author_repo_prs is handled in apply_filters via random sampling,
+    // not here, because it requires a pre-computed sampled set across all records.
+
+    // Engagement filters
+    if params.require_human_engagement && !record.has_human_engagement {
+        return false;
+    }
+    if let Some(min_rev) = params.min_human_reviewers {
+        if (record.human_reviewer_count as u32) < min_rev {
+            return false;
+        }
+    }
+    if let Some(min_commits) = params.min_commits_after_review {
+        if (record.commits_after_review as u32) < min_commits {
+            return false;
+        }
+    }
+
     true
 }
 
@@ -158,7 +204,25 @@ pub fn apply_filters<'a>(snapshot: &'a Snapshot, params: &FilterParams) -> Filte
         })
         .collect();
 
-    // 3. Collect records passing all filters
+    // 3. Pre-compute random sample for max_author_repo_prs cap.
+    //    For triples exceeding the cap, randomly pick `max` pr_ids to keep;
+    //    triples at or below the cap pass through entirely.
+    let capped_sample: Option<HashSet<i64>> = params.max_author_repo_prs.map(|max_prs| {
+        let mut rng = thread_rng();
+        let mut sampled = HashSet::new();
+        for (_, prs) in &snapshot.author_repo_prs {
+            if prs.len() as u32 > max_prs {
+                let mut shuffled = prs.clone();
+                shuffled.shuffle(&mut rng);
+                sampled.extend(shuffled.into_iter().take(max_prs as usize));
+            } else {
+                sampled.extend(prs.iter().copied());
+            }
+        }
+        sampled
+    });
+
+    // 4. Collect records passing all filters
     let mut records = Vec::new();
 
     let iter: Box<dyn Iterator<Item = (&NaiveDate, &Vec<PrRecord>)>> =
@@ -176,6 +240,11 @@ pub fn apply_filters<'a>(snapshot: &'a Snapshot, params: &FilterParams) -> Filte
             }
             if !record_matches(r, snapshot, params) {
                 continue;
+            }
+            if let Some(ref sampled) = capped_sample {
+                if r.author_idx != u32::MAX && !sampled.contains(&r.pr_id) {
+                    continue;
+                }
             }
             records.push((*date, r));
         }

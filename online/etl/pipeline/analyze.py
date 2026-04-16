@@ -143,7 +143,11 @@ def _format_commits_with_diffs(commits: list[dict], details_by_sha: dict[str, di
 
 
 def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
-    """Format bot's review/review_comment/issue_comment events with full context."""
+    """Format bot's review/review_comment/issue_comment events with full context.
+
+    Skips review_comment replies (in_reply_to_id set) — these are responses
+    to other commenters' threads, not original review suggestions.
+    """
     bot_user_lower = chatbot_username.lower()
     lines = []
     for e in events:
@@ -154,8 +158,11 @@ def _format_bot_comments(events: list[dict], chatbot_username: str) -> str:
         if etype not in ("review", "review_comment", "issue_comment"):
             continue
 
-        ts = e.get("timestamp", "")
         data = e.get("data", {})
+        if etype == "review_comment" and data.get("in_reply_to_id"):
+            continue
+
+        ts = e.get("timestamp", "")
 
         if etype == "review":
             state = data.get("state", "")
