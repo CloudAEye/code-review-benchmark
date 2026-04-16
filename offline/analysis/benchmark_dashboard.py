@@ -25,6 +25,8 @@ _HIDDEN_TOOLS: frozenset[str] = frozenset({
     "kodus",
     "cubic-dev",
     "cubic-v3",
+    "greptile-v4",
+    "mergemonkey",
     "qodo-v22",
     "qodo-v2-2",
     "qodo-extended-summary",
