@@ -140,7 +140,7 @@ async function init(){
   $('#end-date').value=d.end;
   // Build initial color map from all chatbots
   assignColors(o.chatbots);
-  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','exclude-self-authored','exclude-bot-authored','require-reviews','include-ignored','min-repo-contributors','max-author-repo-prs'])
+  for(const id of['start-date','end-date','beta','min-prs-total','min-prs','diff-min','diff-max','exclude-self-authored','exclude-bot-authored','require-reviews','include-ignored','min-repo-contributors','max-author-repo-prs','require-human-engagement','min-human-reviewers','min-commits-after-review'])
     document.getElementById(id).addEventListener('change',refresh);
   refresh();
 }
