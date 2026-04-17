@@ -35,6 +35,7 @@ pub struct MetricsQuery {
     pub require_human_engagement: Option<bool>,
     pub min_human_reviewers: Option<u32>,
     pub min_commits_after_review: Option<u32>,
+    pub min_scored_prs: Option<usize>,
 }
 
 fn parse_date(s: &str) -> Option<NaiveDate> {
@@ -86,6 +87,7 @@ fn to_filter_params(q: &MetricsQuery) -> FilterParams {
         require_human_engagement: q.require_human_engagement.unwrap_or(false),
         min_human_reviewers: q.min_human_reviewers,
         min_commits_after_review: q.min_commits_after_review,
+        min_scored_prs: q.min_scored_prs.unwrap_or(0),
     }
 }
 

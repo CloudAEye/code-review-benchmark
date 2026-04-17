@@ -172,6 +172,8 @@ pub struct FilterParams {
     pub min_human_reviewers: Option<u32>,
     /// Minimum commits after bot review
     pub min_commits_after_review: Option<u32>,
+    /// Hide bots with fewer than this many scored PRs in the period
+    pub min_scored_prs: usize,
 }
 
 impl Default for FilterParams {
@@ -198,6 +200,7 @@ impl Default for FilterParams {
             require_human_engagement: false,
             min_human_reviewers: None,
             min_commits_after_review: None,
+            min_scored_prs: 0,
         }
     }
 }
