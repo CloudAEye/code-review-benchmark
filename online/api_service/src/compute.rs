@@ -1,10 +1,41 @@
 use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
 
 use chrono::NaiveDate;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
+use rand::rngs::StdRng;
+use rand::SeedableRng;
 
 use crate::model::*;
+
+/// Derive a deterministic seed from the filter parameters so the capping
+/// random sample is stable across repeated identical queries.
+fn params_seed(params: &FilterParams) -> u64 {
+    let mut h = DefaultHasher::new();
+    params.start_date.hash(&mut h);
+    params.end_date.hash(&mut h);
+    params.chatbots.hash(&mut h);
+    params.languages.hash(&mut h);
+    params.domains.hash(&mut h);
+    params.pr_types.hash(&mut h);
+    params.severities.hash(&mut h);
+    params.diff_lines_min.hash(&mut h);
+    params.diff_lines_max.hash(&mut h);
+    params.beta.to_bits().hash(&mut h);
+    params.min_prs_per_day.hash(&mut h);
+    params.min_total_prs.hash(&mut h);
+    params.include_ignored.hash(&mut h);
+    params.exclude_self_authored.hash(&mut h);
+    params.require_reviews.hash(&mut h);
+    params.exclude_bot_authored.hash(&mut h);
+    params.min_repo_contributors.hash(&mut h);
+    params.max_author_repo_prs.hash(&mut h);
+    params.require_human_engagement.hash(&mut h);
+    params.min_human_reviewers.hash(&mut h);
+    params.min_commits_after_review.hash(&mut h);
+    h.finish()
+}
 
 /// F-beta from precision and recall. Returns None if denominator is zero.
 pub fn f_beta(precision: f64, recall: f64, beta: f32) -> Option<f64> {
@@ -208,7 +239,7 @@ pub fn apply_filters<'a>(snapshot: &'a Snapshot, params: &FilterParams) -> Filte
     //    For triples exceeding the cap, randomly pick `max` pr_ids to keep;
     //    triples at or below the cap pass through entirely.
     let capped_sample: Option<HashSet<i64>> = params.max_author_repo_prs.map(|max_prs| {
-        let mut rng = thread_rng();
+        let mut rng = StdRng::seed_from_u64(params_seed(params));
         let mut sampled = HashSet::new();
         for (_, prs) in &snapshot.author_repo_prs {
             if prs.len() as u32 > max_prs {
