@@ -321,8 +321,25 @@ pub fn daily_metrics(snapshot: &Snapshot, params: &FilterParams) -> DailyMetrics
         }
     }
 
+    // If min_scored_prs is set, compute total scored per bot and build exclusion set
+    let excluded_bots: HashSet<u8> = if params.min_scored_prs > 0 {
+        let mut totals: HashMap<u8, usize> = HashMap::new();
+        for ((_, idx), acc) in &buckets {
+            *totals.entry(*idx).or_default() += acc.precision_count;
+        }
+        totals.into_iter()
+            .filter(|(_, count)| *count < params.min_scored_prs)
+            .map(|(idx, _)| idx)
+            .collect()
+    } else {
+        HashSet::new()
+    };
+
     let mut series: Vec<DailyMetricRow> = Vec::new();
     for ((date, chatbot_idx), acc) in &buckets {
+        if excluded_bots.contains(chatbot_idx) {
+            continue;
+        }
         if params.min_prs_per_day > 0 && acc.precision_count < params.min_prs_per_day {
             continue;
         }
@@ -410,6 +427,12 @@ pub fn leaderboard(snapshot: &Snapshot, params: &FilterParams) -> LeaderboardRes
     // Build rows for all chatbots that have at least one filtered record
     let mut rows: Vec<LeaderboardRow> = sampled_counts
         .iter()
+        .filter(|(&idx, _)| {
+            if params.min_scored_prs == 0 { return true; }
+            accums.get(&idx)
+                .map(|a| a.precision_count >= params.min_scored_prs)
+                .unwrap_or(false)
+        })
         .map(|(&idx, &sampled)| {
             let acc = accums.get(&idx);
             let (avg_p, avg_r, f_score, scored) = match acc {

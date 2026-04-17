@@ -840,6 +840,156 @@ mod tests {
         assert_eq!(result.records[0].1.commits_after_review, 5);
     }
 
+    // -----------------------------------------------------------------------
+    // min_scored_prs tests
+    // -----------------------------------------------------------------------
+
+    #[test]
+    fn test_min_scored_prs_hides_low_count_bot_from_leaderboard() {
+        // bot1: 5 scored PRs, bot2: 2 scored PRs
+        let snap = make_snapshot(
+            vec![("bot1", "Bot One"), ("bot2", "Bot Two")],
+            vec![],
+            vec![
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5))),
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6))),
+                (date(2026, 2, 2), rec(0, dt(2026, 2, 2), Some(0.5), Some(0.5))),
+                (date(2026, 2, 2), rec(0, dt(2026, 2, 2), Some(0.6), Some(0.6))),
+                (date(2026, 2, 3), rec(0, dt(2026, 2, 3), Some(0.7), Some(0.7))),
+                (date(2026, 2, 1), rec(1, dt(2026, 2, 1), Some(0.8), Some(0.8))),
+                (date(2026, 2, 2), rec(1, dt(2026, 2, 2), Some(0.9), Some(0.9))),
+            ],
+        );
+
+        // No filter: both bots appear
+        let resp = leaderboard(&snap, &FilterParams::default());
+        assert_eq!(resp.rows.len(), 2);
+
+        // min_scored_prs=3: bot2 (2 scored) hidden, bot1 (5 scored) remains
+        let params = FilterParams {
+            min_scored_prs: 3,
+            ..Default::default()
+        };
+        let resp = leaderboard(&snap, &params);
+        assert_eq!(resp.rows.len(), 1);
+        assert_eq!(resp.rows[0].chatbot, "bot1");
+        assert_eq!(resp.rows[0].scored_prs, 5);
+    }
+
+    #[test]
+    fn test_min_scored_prs_zero_shows_all() {
+        let snap = make_snapshot(
+            vec![("bot1", "Bot One"), ("bot2", "Bot Two")],
+            vec![],
+            vec![
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5))),
+                (date(2026, 2, 1), rec(1, dt(2026, 2, 1), Some(0.8), Some(0.8))),
+            ],
+        );
+
+        let params = FilterParams {
+            min_scored_prs: 0,
+            ..Default::default()
+        };
+        let resp = leaderboard(&snap, &params);
+        assert_eq!(resp.rows.len(), 2);
+    }
+
+    #[test]
+    fn test_min_scored_prs_counts_only_fully_scored() {
+        // bot1 has 3 records: 2 with both P+R, 1 with only P (no recall)
+        let snap = make_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![],
+            vec![
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5))),
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6))),
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.7), None)),
+            ],
+        );
+
+        // min_scored_prs=3: bot1 has only 2 scored (the one without recall doesn't count)
+        let params = FilterParams {
+            min_scored_prs: 3,
+            ..Default::default()
+        };
+        let resp = leaderboard(&snap, &params);
+        assert_eq!(resp.rows.len(), 0);
+
+        // min_scored_prs=2: bot1 has exactly 2 scored → passes
+        let params = FilterParams {
+            min_scored_prs: 2,
+            ..Default::default()
+        };
+        let resp = leaderboard(&snap, &params);
+        assert_eq!(resp.rows.len(), 1);
+    }
+
+    #[test]
+    fn test_min_scored_prs_hides_bot_from_daily_metrics() {
+        // bot1: 4 scored PRs across 2 days, bot2: 1 scored PR
+        let snap = make_snapshot(
+            vec![("bot1", "Bot One"), ("bot2", "Bot Two")],
+            vec![],
+            vec![
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5))),
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6))),
+                (date(2026, 2, 2), rec(0, dt(2026, 2, 2), Some(0.7), Some(0.7))),
+                (date(2026, 2, 2), rec(0, dt(2026, 2, 2), Some(0.8), Some(0.8))),
+                (date(2026, 2, 1), rec(1, dt(2026, 2, 1), Some(0.9), Some(0.9))),
+            ],
+        );
+
+        // No filter: bot1 has 2 day entries, bot2 has 1 → 3 total
+        let resp = daily_metrics(&snap, &FilterParams::default());
+        assert_eq!(resp.series.len(), 3);
+
+        // min_scored_prs=2: bot2 (1 scored) excluded from chart
+        let params = FilterParams {
+            min_scored_prs: 2,
+            ..Default::default()
+        };
+        let resp = daily_metrics(&snap, &params);
+        assert_eq!(resp.series.len(), 2);
+        assert!(resp.series.iter().all(|r| r.chatbot == "bot1"));
+    }
+
+    #[test]
+    fn test_min_scored_prs_with_min_prs_per_day() {
+        // bot1: day1 has 3 scored, day2 has 1 scored
+        // min_prs_per_day=2 drops day2, so only day1's 3 count as scored
+        // min_scored_prs=4 should then hide bot1 since effective scored = 3
+        let snap = make_snapshot(
+            vec![("bot1", "Bot One")],
+            vec![],
+            vec![
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.5), Some(0.5))),
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.6), Some(0.6))),
+                (date(2026, 2, 1), rec(0, dt(2026, 2, 1), Some(0.7), Some(0.7))),
+                (date(2026, 2, 2), rec(0, dt(2026, 2, 2), Some(0.8), Some(0.8))),
+            ],
+        );
+
+        // min_prs_per_day=2, min_scored_prs=4: day2 dropped (1 pr), remaining scored=3 < 4
+        let params = FilterParams {
+            min_prs_per_day: 2,
+            min_scored_prs: 4,
+            ..Default::default()
+        };
+        let resp = leaderboard(&snap, &params);
+        assert_eq!(resp.rows.len(), 0);
+
+        // min_prs_per_day=2, min_scored_prs=3: day2 dropped, remaining scored=3 >= 3
+        let params = FilterParams {
+            min_prs_per_day: 2,
+            min_scored_prs: 3,
+            ..Default::default()
+        };
+        let resp = leaderboard(&snap, &params);
+        assert_eq!(resp.rows.len(), 1);
+        assert_eq!(resp.rows[0].scored_prs, 3);
+    }
+
     #[test]
     fn test_engagement_filters_combined() {
         let mut r_full = rec(0, dt(2026, 2, 1), Some(0.9), Some(0.9));
