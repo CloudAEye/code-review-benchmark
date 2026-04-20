@@ -68,6 +68,11 @@ class TokenInvalidError(Exception):
     """Raised when a GitHub token is rejected with 401 — invalid, expired, or revoked."""
 
 
+class AllTokensInvalidError(Exception):
+    """Raised when every token in the pool has been permanently rejected.
+    Never causes a PR to be marked as error — the enrichment loop aborts instead."""
+
+
 class GitHubEnrichClient:
     """Async GitHub API client with rate limiting and retries — adapted from gh_enrich.py."""
 
@@ -578,7 +583,7 @@ async def enrich_loop(
                 try:
                     while True:
                         if pool.all_invalid():
-                            raise RuntimeError("All GitHub tokens are invalid — cannot continue enrichment")
+                            raise AllTokensInvalidError("All GitHub tokens are invalid — aborting enrichment")
                         gh = pool.get()
                         if gh is None:
                             wait = max(0, pool.earliest_reset() - time.time()) + 5
@@ -602,6 +607,11 @@ async def enrich_loop(
                 finally:
                     if gh is not None:
                         pool.release(gh)
+            except AllTokensInvalidError:
+                # Don't mark the PR as error — leave it pending so it's retried
+                # when the pipeline restarts with valid tokens. Signal all workers to stop.
+                logger.critical(f"Worker {worker_id}: all tokens invalid, stopping enrichment loop")
+                stop_event.set()
             except Exception as e:
                 logger.error(f"Worker {worker_id}: error enriching {pr_label}: {e}")
                 await repo_obj.mark_error(pr_id, str(e))
