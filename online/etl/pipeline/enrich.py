@@ -566,6 +566,17 @@ async def enrich_loop(
     async def _worker(worker_id: int) -> None:
         nonlocal enriched_count, error_count
         while True:
+            # Stop early if the pool is dead or another worker requested shutdown —
+            # avoids locking more PRs we can't actually process.
+            if stop_event.is_set() or pool.all_invalid():
+                # Drain remaining items (including sentinels) so queue.join() unblocks
+                try:
+                    pr_row = queue.get_nowait()
+                    queue.task_done()
+                    continue
+                except asyncio.QueueEmpty:
+                    break
+
             pr_row = await queue.get()
             if pr_row is None:
                 queue.task_done()
@@ -608,9 +619,12 @@ async def enrich_loop(
                     if gh is not None:
                         pool.release(gh)
             except AllTokensInvalidError:
-                # Don't mark the PR as error — leave it pending so it's retried
-                # when the pipeline restarts with valid tokens. Signal all workers to stop.
+                # Don't mark the PR as error — release the lock so it's picked up
+                # immediately on the next run with valid tokens (instead of waiting
+                # for the stale-lock timeout). Signal all workers to stop.
                 logger.critical(f"Worker {worker_id}: all tokens invalid, stopping enrichment loop")
+                with contextlib.suppress(Exception):
+                    await repo_obj.unlock_pr(pr_id)
                 stop_event.set()
             except Exception as e:
                 logger.error(f"Worker {worker_id}: error enriching {pr_label}: {e}")
