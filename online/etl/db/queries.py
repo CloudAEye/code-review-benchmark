@@ -21,8 +21,8 @@ GET_ALL_CHATBOTS = """
 
 INSERT_PR = """
     INSERT INTO prs (chatbot_id, repo_name, pr_number, pr_url, pr_title, pr_author,
-                     pr_created_at, pr_merged, status, bq_events, bot_reviewed_at)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                     pr_created_at, pr_merged, status, bq_events, bot_reviewed_at, repo_id)
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
     ON CONFLICT (chatbot_id, repo_name, pr_number) DO NOTHING
     RETURNING id
 """
@@ -61,6 +61,7 @@ GET_ASSEMBLED_PRS_NOT_ANALYZED = """
     WHERE p.chatbot_id = $1
       AND p.status = 'assembled'
       AND la.id IS NULL
+      AND p.pr_merged = TRUE
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $2
 """
@@ -70,6 +71,7 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED = """
     LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
     WHERE p.status = 'assembled'
       AND la.id IS NULL
+      AND p.pr_merged = TRUE
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $1
 """
@@ -80,6 +82,7 @@ GET_ASSEMBLED_PRS_NOT_ANALYZED_SINCE = """
     WHERE p.chatbot_id = $1
       AND p.status = 'assembled'
       AND la.id IS NULL
+      AND p.pr_merged = TRUE
       AND p.bot_reviewed_at >= $2
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $3
@@ -90,6 +93,7 @@ GET_ALL_ASSEMBLED_NOT_ANALYZED_SINCE = """
     LEFT JOIN llm_analyses la ON la.pr_id = p.id AND la.chatbot_id = p.chatbot_id
     WHERE p.status = 'assembled'
       AND la.id IS NULL
+      AND p.pr_merged = TRUE
       AND p.bot_reviewed_at >= $1
     ORDER BY p.bot_reviewed_at DESC NULLS LAST
     LIMIT $2
@@ -167,8 +171,21 @@ MARK_PR_SKIPPED = """
 """
 
 UPDATE_PR_METADATA = """
-    UPDATE prs SET pr_title = $1, pr_author = $2, pr_created_at = $3, pr_merged = $4
+    UPDATE prs SET pr_title = $1, pr_author = $2, pr_created_at = $3,
+                   pr_merged = COALESCE($4, pr_merged)
     WHERE id = $5
+"""
+
+UPDATE_PR_AUTHOR = """
+    UPDATE prs SET pr_author = $1 WHERE id = $2
+"""
+
+MERGE_PR_BQ_EVENTS = """
+    UPDATE prs SET bq_events = $1, pr_merged = COALESCE($2, pr_merged),
+                   pr_title = CASE WHEN pr_title = '' OR pr_title IS NULL THEN $3 ELSE pr_title END,
+                   pr_author = COALESCE(pr_author, $4),
+                   pr_created_at = COALESCE(pr_created_at, $5)
+    WHERE id = $6
 """
 
 # -- LLM analyses --------------------------------------------------------------
