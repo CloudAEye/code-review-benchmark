@@ -10,6 +10,7 @@ This script creates one dashboard HTML file with all models' data embedded:
 - Model selector to switch between different judge models dynamically
 """
 
+import base64
 import json
 from pathlib import Path
 
@@ -54,7 +55,7 @@ TOOL_DISPLAY_NAMES = {
     "copilot": "GitHub Copilot",
     "baz": "Baz",
     "greptile": "Greptile",
-    "kg": "KG",
+    "kg": "Kilo+Grok",
     "entelligence": "Entelligence",
     "cubic-dev": "Cubic",
     "sourcery": "Sourcery",
@@ -69,6 +70,7 @@ TOOL_DISPLAY_NAMES = {
     "qodo-extended-v2": "Qodo Extended",
     "macroscope": "Macroscope",
     "cubic-v2": "Cubic v2",
+    "cloudaeye": "CloudAEye",
 }
 
 TOOL_COLORS = {
@@ -99,7 +101,26 @@ TOOL_COLORS = {
     "qodo-extended-v2": "#6d28d9",
     "macroscope": "#0891b2",
     "cubic-v2": "#c026d3",
+    "cloudaeye": "#0052cc",
 }
+
+
+def load_tool_logos(logos_dir: Path) -> dict[str, str]:
+    """Load tool logo images from logos/ dir and return as base64 data URIs.
+
+    Expected filenames: {tool_slug}.png / .jpg / .svg / .webp
+    e.g. logos/cloudaeye.png
+    """
+    logos: dict[str, str] = {}
+    if not logos_dir.exists():
+        return logos
+    mime = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+            ".svg": "image/svg+xml", ".webp": "image/webp", ".ico": "image/x-icon"}
+    for f in logos_dir.iterdir():
+        if f.suffix.lower() in mime:
+            data = base64.b64encode(f.read_bytes()).decode()
+            logos[f.stem] = f"data:{mime[f.suffix.lower()]};base64,{data}"
+    return logos
 
 
 def load_model_data(results_dir: Path, model_name: str, central_labels: dict) -> dict:
@@ -815,8 +836,10 @@ def sort_filters_for_tool_diversity(filters: list, all_models_data: dict = None)
     return result
 
 
-def generate_html(all_models_data: dict, default_model: str) -> str:
+def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | None = None) -> str:
     """Generate the complete HTML dashboard with all models' data."""
+    if tool_logos is None:
+        tool_logos = {}
     # Generate filters dynamically based on actual data
     predefined_filters = generate_predefined_filters(all_models_data)
     # Enrich filters with best model and filter out those with <5 PRs
@@ -1281,6 +1304,7 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
         const allModelsData = {json.dumps(all_models_data)};
         const toolDisplayNames = {json.dumps(TOOL_DISPLAY_NAMES)};
         const toolColors = {json.dumps(TOOL_COLORS)};
+        const toolLogos = {json.dumps(tool_logos)};
         const predefinedFilters = {json.dumps(predefined_filters)};
 
         let currentModel = '{default_model}';
@@ -1534,7 +1558,10 @@ def generate_html(all_models_data: dict, default_model: str) -> str:
                 <tr>
                     <td>
                         <div class="tool-cell">
-                            <div class="tool-icon" style="background: ${{row.color}}">${{row.displayName.charAt(0)}}</div>
+                            ${{toolLogos[row.tool]
+                                ? `<div class="tool-icon" style="background:#fff;padding:2px"><img src="${{toolLogos[row.tool]}}" style="width:100%;height:100%;object-fit:contain;border-radius:4px" /></div>`
+                                : `<div class="tool-icon" style="background:${{row.color}}">${{row.displayName.charAt(0)}}</div>`
+                            }}
                             ${{row.displayName}}
                         </div>
                     </td>
@@ -1645,12 +1672,18 @@ def main():
     # Use the model with the most tools evaluated as default
     default_model = max(all_models_data.keys(), key=lambda m: len(all_models_data[m].get("tools", [])))
 
+    # Load logos (optional — place images in analysis/logos/{tool_slug}.png)
+    logos_dir = args.output.parent / "logos"
+    tool_logos = load_tool_logos(logos_dir)
+    if tool_logos:
+        print(f"  Loaded logos for: {', '.join(sorted(tool_logos))}")
+
     # Generate HTML
     print(f"Generating HTML dashboard (default model: {default_model})...")
-    html = generate_html(all_models_data, default_model)
+    html = generate_html(all_models_data, default_model, tool_logos)
 
     args.output.parent.mkdir(exist_ok=True)
-    with open(args.output, "w") as f:
+    with open(args.output, "w", encoding="utf-8") as f:
         f.write(html)
     print(f"Generated: {args.output}")
 
@@ -1658,7 +1691,7 @@ def main():
     print("Generating JSON data...")
     json_data = generate_json_data(all_models_data, default_model)
 
-    with open(args.json_output, "w") as f:
+    with open(args.json_output, "w", encoding="utf-8") as f:
         json.dump(json_data, f, indent=2)
     print(f"Generated: {args.json_output}")
 

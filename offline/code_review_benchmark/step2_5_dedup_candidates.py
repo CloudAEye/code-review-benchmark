@@ -143,6 +143,7 @@ class DedupLLM:
             raise ValueError("MARTIAN_API_KEY environment variable required")
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.model = os.environ.get("MARTIAN_MODEL", "openai/gpt-4o-mini")
+        self._api_model = self.model.split("/", 1)[-1] if "withmartian.com" not in base_url else self.model
         print(f"Dedup model: {self.model}")
         print(f"Base URL: {base_url}")
 
@@ -164,7 +165,7 @@ class DedupLLM:
             try:
                 response = await asyncio.wait_for(
                     self.client.chat.completions.create(
-                        model=self.model,
+                        model=self._api_model,
                         messages=[
                             {
                                 "role": "system",

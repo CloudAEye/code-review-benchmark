@@ -110,6 +110,7 @@ class LLMJudge:
 
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.model = os.environ.get("MARTIAN_MODEL", "openai/gpt-4o-mini")
+        self._api_model = self.model.split("/", 1)[-1] if "withmartian.com" not in base_url else self.model
         self.structured_output = structured_output
 
         print(f"Judge model: {self.model}")
@@ -121,7 +122,7 @@ class LLMJudge:
         for attempt in range(max_retries):
             try:
                 kwargs = {
-                    "model": self.model,
+                    "model": self._api_model,
                     "messages": [
                         {
                             "role": "system",

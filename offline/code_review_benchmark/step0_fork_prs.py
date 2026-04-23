@@ -114,6 +114,11 @@ class GitHubPRForker:
         if response.status_code not in (200, 204):
             print(f"Warning: Could not disable push protection: {response.json().get('message')}")
 
+    def disable_dependabot(self, repo_name: str):
+        """Disable Dependabot security alerts and automated fixes."""
+        self._request("DELETE", f"/repos/{self.org}/{repo_name}/vulnerability-alerts")
+        self._request("DELETE", f"/repos/{self.org}/{repo_name}/automated-security-fixes")
+
     def create_pull_request(
         self, repo: str, title: str, body: str, head: str, base: str
     ) -> dict:

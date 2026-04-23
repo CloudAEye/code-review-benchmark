@@ -86,6 +86,8 @@ class CandidateExtractor:
 
         self.client = AsyncOpenAI(api_key=api_key, base_url=base_url)
         self.model = os.environ.get("MARTIAN_MODEL", "openai/gpt-4o-mini")
+        # Provider-prefixed model names only work through Martian proxy, not direct APIs
+        self._api_model = self.model.split("/", 1)[-1] if "withmartian.com" not in base_url else self.model
 
         print(f"Model: {self.model}")
         print(f"Base URL: {base_url}")
@@ -96,7 +98,7 @@ class CandidateExtractor:
         for attempt in range(max_retries):
             try:
                 response = await self.client.chat.completions.create(
-                    model=self.model,
+                    model=self._api_model,
                     messages=[
                         {
                             "role": "system",

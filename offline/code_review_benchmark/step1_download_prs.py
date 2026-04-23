@@ -40,6 +40,7 @@ def gh(args: list[str]) -> dict | list:
         ["gh", *args],
         capture_output=True,
         text=True,
+        encoding="utf-8",
     )
     if result.returncode != 0:
         if "gh auth login" in result.stderr or "GH_TOKEN" in result.stderr:
