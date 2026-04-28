@@ -20,6 +20,13 @@
 
 Open-source [benchmark](https://codereview.withmartian.com) for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
 
+## Benchmark outputs
+
+The main offline analysis artifacts in this repository are:
+
+- [`offline/analysis/benchmark_dashboard.html`](offline/analysis/benchmark_dashboard.html)
+- [`offline/analysis/benchmark_dashboard.json`](offline/analysis/benchmark_dashboard.json)
+
 ## The problem
 
 As AI agents write more code, we need systems to make sure the code they generate is good. This has led to the proliferation of AI code review tools.
