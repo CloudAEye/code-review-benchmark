@@ -18,13 +18,11 @@
   </picture>
 </div>
 
-Open-source [benchmark](https://codereview.withmartian.com) for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
+CloudAEye benchmark [report](https://www.cloudaeye.com/products/code-review/benchmark-2026/report/index.html) for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
 
 ![Benchmark results](images/bar.png)
 
 ![Gartner](images/gartner.png)
-
-[Detailed report](https://www.cloudaeye.com/products/code-review/benchmark-2026/report/index.html)
 
 ## Two benchmarks
 
