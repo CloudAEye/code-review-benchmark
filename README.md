@@ -24,8 +24,7 @@ Open-source [benchmark](https://codereview.withmartian.com) for evaluating AI co
 
 The main offline analysis artifacts in this repository are:
 
-- [`offline/analysis/benchmark_dashboard.html`](offline/analysis/benchmark_dashboard.html)
-- [`offline/analysis/benchmark_dashboard.json`](offline/analysis/benchmark_dashboard.json)
+- Dashboard: [`offline/analysis/benchmark_dashboard.html`](offline/analysis/benchmark_dashboard.html)
 
 ## The problem
 
@@ -41,13 +40,13 @@ Without shared evals for these tools, every company grades its own homework. You
 
 **50 PRs** from 5 major open-source projects, each with human-verified golden comments — the real issues a reviewer should catch.
 
-| Repository | Language | Domain |
-|---|---|---|
-| [Sentry](https://github.com/getsentry/sentry) | Python | Error tracking |
-| [Grafana](https://github.com/grafana/grafana) | Go | Observability |
-| [Cal.com](https://github.com/calcom/cal.com) | TypeScript | Scheduling |
-| [Discourse](https://github.com/discourse/discourse) | Ruby | Forum platform |
-| [Keycloak](https://github.com/keycloak/keycloak) | Java | Authentication |
+| Repository                                          | Language   | Domain         |
+| --------------------------------------------------- | ---------- | -------------- |
+| [Sentry](https://github.com/getsentry/sentry)       | Python     | Error tracking |
+| [Grafana](https://github.com/grafana/grafana)       | Go         | Observability  |
+| [Cal.com](https://github.com/calcom/cal.com)        | TypeScript | Scheduling     |
+| [Discourse](https://github.com/discourse/discourse) | Ruby       | Forum platform |
+| [Keycloak](https://github.com/keycloak/keycloak)    | Java       | Authentication |
 
 Each PR has curated golden comments with severity labels (Low / Medium / High / Critical). An LLM judge matches each tool's review against the golden comments and computes precision and recall.
 
@@ -89,12 +88,12 @@ See [`online/README.md`](online/README.md) for architecture and setup.
 
 Both benchmarks use an LLM-as-judge approach, but with different methodologies suited to their data:
 
-| | Offline | Online |
-|---|---|---|
-| **Ground truth** | Human-curated golden comments | Developer's post-review fixes |
-| **Precision** | Tool comments that match a golden comment / total tool comments | Bot suggestions matched to real fixes / total suggestions |
-| **Recall** | Golden comments found by the tool / total golden comments | Real fixes caught by the bot / total fixes made |
-| **Judge input** | Golden comment + tool candidate | Full PR timeline: diff, bot comments, post-review commits |
+|                  | Offline                                                         | Online                                                    |
+| ---------------- | --------------------------------------------------------------- | --------------------------------------------------------- |
+| **Ground truth** | Human-curated golden comments                                   | Developer's post-review fixes                             |
+| **Precision**    | Tool comments that match a golden comment / total tool comments | Bot suggestions matched to real fixes / total suggestions |
+| **Recall**       | Golden comments found by the tool / total golden comments       | Real fixes caught by the bot / total fixes made           |
+| **Judge input**  | Golden comment + tool candidate                                 | Full PR timeline: diff, bot comments, post-review commits |
 
 In both cases, the judge prompt asks "do these describe the same underlying issue?" — different wording is fine, only the substance matters.
 
