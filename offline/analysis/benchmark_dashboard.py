@@ -861,11 +861,30 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
     filter_buttons = []
     for f in predefined_filters:
         filter_buttons.append(
-            f'<div class="predefined-filter" data-filter-id="{f["id"]}" onclick="applyPredefinedFilter(\'{f["id"]}\')">'
-            f'{f["label"]} <span class="arrow">↗</span>'
-            f'</div>'
+            (
+                f["id"],
+                f'<div class="predefined-filter" data-filter-id="{f["id"]}" onclick="applyPredefinedFilter(\'{f["id"]}\')">'
+                f'<span class="preset-icon">&#9813;</span>{f["label"]} <span class="arrow">↗</span>'
+                f'</div>',
+            )
         )
-    filter_buttons_html = "\n        ".join(filter_buttons)
+    quick_preset_ids = [
+        "high_precision",
+        "tool_kodus-v2_domain_concurrency",
+        "tool_kg_complexity_complex",
+        "tool_propel-v2_risk_high_context_file",
+    ]
+    visible_filter_buttons = []
+    overflow_filter_buttons = []
+    for filter_id, button_html in filter_buttons:
+        if filter_id in quick_preset_ids:
+            visible_filter_buttons.append((quick_preset_ids.index(filter_id), button_html))
+        else:
+            overflow_filter_buttons.append(button_html)
+    visible_filter_buttons_html = "\n            ".join(
+        button_html for _, button_html in sorted(visible_filter_buttons)
+    )
+    overflow_filter_buttons_html = "\n            ".join(overflow_filter_buttons)
 
     # Generate language checkboxes
     lang_checkboxes = []
@@ -991,28 +1010,79 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
         .predefined-filters {{
             background: #fff;
             border-bottom: 1px solid #e5e5e5;
-            padding: 16px 24px;
+            padding: 16px 56px;
+        }}
+        .predefined-filters-row {{
             display: flex;
-            flex-wrap: wrap;
+            align-items: center;
             gap: 12px;
-            justify-content: center;
+            min-height: 48px;
+        }}
+        .predefined-label {{
+            flex: 0 0 auto;
+            color: #a3a3a3;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 4px;
+        }}
+        .predefined-visible,
+        .predefined-overflow {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }}
+        .predefined-visible {{
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+        }}
+        .predefined-overflow {{
+            flex-wrap: wrap;
+            padding-top: 12px;
+        }}
+        .predefined-overflow.hidden {{
+            display: none;
+        }}
+        .preset-toggle {{
+            flex: 0 0 auto;
+            margin-left: auto;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            border: 0;
+            background: transparent;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 8px 0 8px 16px;
+        }}
+        .preset-toggle:hover {{
+            color: #1a1a1a;
+        }}
+        .preset-toggle-icon {{
+            font-size: 18px;
+            line-height: 1;
         }}
         .predefined-filter {{
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 10px;
             padding: 8px 16px;
             border: 1px solid #e5e5e5;
-            border-radius: 20px;
+            border-radius: 6px;
             background: #fff;
             cursor: pointer;
             font-size: 14px;
-            color: #666;
+            color: #4a4a4a;
             transition: all 0.2s;
+            white-space: nowrap;
+            min-height: 36px;
         }}
         .predefined-filter:hover {{ border-color: #999; color: #333; }}
         .predefined-filter.active {{ background: #1a1a1a; color: #fff; border-color: #1a1a1a; }}
-        .predefined-filter .arrow {{ font-size: 12px; }}
+        .predefined-filter .preset-icon {{ font-size: 14px; }}
+        .predefined-filter .arrow {{ display: none; }}
         .main-container {{ display: flex; min-height: calc(100vh - 60px); }}
         .sidebar {{
             width: 300px;
@@ -1101,13 +1171,106 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
             border-radius: 8px;
             padding: 24px;
             margin-bottom: 24px;
+            position: relative;
         }}
         #scatter-plot {{ width: 100%; height: 500px; }}
+        #scatter-labels {{
+            position: absolute;
+            pointer-events: none;
+            z-index: 2;
+        }}
+        #chart-tooltip-layer {{
+            position: absolute;
+            pointer-events: none;
+            z-index: 20;
+        }}
+        .chart-tool-label {{
+            position: absolute;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            min-height: 30px;
+            padding: 4px 9px 4px 6px;
+            border: 1px solid #e5e5e5;
+            border-radius: 16px;
+            background: #fff;
+            color: #1a1a1a;
+            box-shadow: 0 2px 7px rgba(0, 0, 0, 0.10);
+            font-size: 11px;
+            font-weight: 500;
+            white-space: nowrap;
+            transform: translate(-12px, -50%);
+            pointer-events: auto;
+        }}
+        .chart-tool-label.top-rank {{
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.14), 0 5px 12px rgba(0, 0, 0, 0.12);
+        }}
+        .chart-tool-icon {{
+            width: 20px;
+            height: 20px;
+            border-radius: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+            overflow: hidden;
+            color: #fff;
+            font-size: 9px;
+            font-weight: 700;
+        }}
+        .chart-tool-icon img {{
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 4px;
+            background: #fff;
+        }}
+        .chart-rank-badge {{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 22px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #4f46e5;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+        }}
+        .chart-tooltip {{
+            position: absolute;
+            min-width: 160px;
+            padding: 9px 11px;
+            border: 2px solid #4f46e5;
+            border-radius: 11px;
+            background: #fff;
+            color: #1a1a1a;
+            box-shadow: 0 9px 20px rgba(0, 0, 0, 0.15);
+            pointer-events: none;
+            text-align: left;
+            white-space: normal;
+        }}
+        .chart-tooltip-title {{
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 5px;
+            font-size: 12px;
+            font-weight: 700;
+        }}
+        .chart-tooltip-row {{
+            color: #777;
+            font-size: 11px;
+            line-height: 1.4;
+        }}
         .data-table-container {{
             background: #fff;
             border: 1px solid #e5e5e5;
             border-radius: 8px;
             overflow: hidden;
+            margin-bottom: 64px;
         }}
         .table-header {{
             padding: 16px 20px;
@@ -1158,6 +1321,97 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
         }}
         .metric-bar-value {{ height: 100%; background: #1a1a1a; border-radius: 3px; }}
         .metric-value {{ min-width: 50px; text-align: right; }}
+        .repositories-section {{
+            padding: 40px 0 56px;
+            text-align: center;
+        }}
+        .repositories-title {{
+            font-size: 32px;
+            font-weight: 400;
+            margin-bottom: 48px;
+            color: #111;
+        }}
+        .repositories-title span {{
+            color: #ff4b3e;
+        }}
+        .repositories-copy {{
+            color: #8a8f98;
+            font-size: 17px;
+            line-height: 1.7;
+            max-width: 980px;
+            margin: 0 auto 24px;
+        }}
+        .repositories-copy strong {{
+            color: #111;
+            font-weight: 600;
+        }}
+        .repository-links {{
+            display: grid;
+            grid-template-columns: repeat(5, minmax(140px, 1fr));
+            gap: 14px;
+            max-width: 1160px;
+            margin: 56px auto 0;
+        }}
+        .repository-card {{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            min-height: 58px;
+            padding: 0 18px;
+            border: 1px solid #e2e2e2;
+            border-radius: 8px;
+            background: #fff;
+            color: #111;
+            text-decoration: none;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+        }}
+        .repository-card:hover {{
+            border-color: #bdbdbd;
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.08);
+            transform: translateY(-1px);
+        }}
+        .repository-card-main {{
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }}
+        .repository-icon {{
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            object-fit: cover;
+            flex: 0 0 auto;
+        }}
+        .repository-name {{
+            font-size: 16px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }}
+        .repository-arrow {{
+            font-size: 20px;
+            line-height: 1;
+            flex: 0 0 auto;
+        }}
+        @media (max-width: 1100px) {{
+            .repository-links {{
+                grid-template-columns: repeat(2, minmax(180px, 1fr));
+            }}
+        }}
+        @media (max-width: 640px) {{
+            .repositories-title {{
+                font-size: 28px;
+                margin-bottom: 28px;
+            }}
+            .repository-links {{
+                grid-template-columns: 1fr;
+                margin-top: 36px;
+            }}
+        }}
         .hidden {{ display: none; }}
         .checkbox-group {{ display: flex; flex-direction: column; gap: 8px; }}
         .checkbox-item {{ display: flex; align-items: center; gap: 8px; font-size: 14px; color: #666; }}
@@ -1166,7 +1420,19 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
 </head>
 <body>
     <div class="predefined-filters">
-        {filter_buttons_html}
+        <div class="predefined-filters-row">
+            <div class="predefined-label">Quick Presets:</div>
+            <div class="predefined-visible">
+                {visible_filter_buttons_html}
+            </div>
+            <button class="preset-toggle" id="preset-toggle" type="button" onclick="togglePresetOverflow()" aria-expanded="false" aria-controls="preset-overflow">
+                <span id="preset-toggle-label">More</span>
+                <span class="preset-toggle-icon" id="preset-toggle-icon">+</span>
+            </button>
+        </div>
+        <div class="predefined-overflow hidden" id="preset-overflow">
+            {overflow_filter_buttons_html}
+        </div>
     </div>
 
     <div class="main-container">
@@ -1278,6 +1544,8 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
 
             <div class="chart-container">
                 <div id="scatter-plot"></div>
+                <div id="scatter-labels" aria-hidden="true"></div>
+                <div id="chart-tooltip-layer" aria-hidden="true"></div>
             </div>
 
             <div class="data-table-container">
@@ -1285,6 +1553,7 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
                 <table class="data-table" id="metrics-table">
                     <thead>
                         <tr>
+                            <th onclick="sortTable('rank')">#</th>
                             <th onclick="sortTable('tool')">Tool</th>
                             <th onclick="sortTable('precision')">Precision (%)</th>
                             <th onclick="sortTable('recall')">Recall (%)</th>
@@ -1296,6 +1565,55 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
+
+            <section class="repositories-section" aria-labelledby="repositories-title">
+                <h2 class="repositories-title" id="repositories-title"><span>Repositories</span> Used</h2>
+                <p class="repositories-copy">
+                    The offline benchmark draws from a <strong>diverse set of open-source repositories spanning different languages,</strong>
+                    frameworks, and domains — from infrastructure and observability tools to web platforms and security projects.
+                </p>
+                <p class="repositories-copy">
+                    This variety ensures our results reflect <strong>how AI reviewers perform across real-world codebases,</strong>
+                    not just one type of software.
+                </p>
+                <div class="repository-links">
+                    <a class="repository-card" href="https://github.com/getsentry/sentry" target="_blank" rel="noopener noreferrer">
+                        <span class="repository-card-main">
+                            <img class="repository-icon" src="https://github.com/getsentry.png" alt="" loading="lazy">
+                            <span class="repository-name">Sentry</span>
+                        </span>
+                        <span class="repository-arrow">↗</span>
+                    </a>
+                    <a class="repository-card" href="https://github.com/discourse/discourse" target="_blank" rel="noopener noreferrer">
+                        <span class="repository-card-main">
+                            <img class="repository-icon" src="https://github.com/discourse.png" alt="" loading="lazy">
+                            <span class="repository-name">Discourse</span>
+                        </span>
+                        <span class="repository-arrow">↗</span>
+                    </a>
+                    <a class="repository-card" href="https://github.com/calcom/cal.com" target="_blank" rel="noopener noreferrer">
+                        <span class="repository-card-main">
+                            <img class="repository-icon" src="https://github.com/calcom.png" alt="" loading="lazy">
+                            <span class="repository-name">cal.com</span>
+                        </span>
+                        <span class="repository-arrow">↗</span>
+                    </a>
+                    <a class="repository-card" href="https://github.com/grafana/grafana" target="_blank" rel="noopener noreferrer">
+                        <span class="repository-card-main">
+                            <img class="repository-icon" src="https://github.com/grafana.png" alt="" loading="lazy">
+                            <span class="repository-name">Grafana</span>
+                        </span>
+                        <span class="repository-arrow">↗</span>
+                    </a>
+                    <a class="repository-card" href="https://github.com/keycloak/keycloak" target="_blank" rel="noopener noreferrer">
+                        <span class="repository-card-main">
+                            <img class="repository-icon" src="https://github.com/keycloak.png" alt="" loading="lazy">
+                            <span class="repository-name">Keycloak</span>
+                        </span>
+                        <span class="repository-arrow">↗</span>
+                    </a>
+                </div>
+            </section>
         </div>
     </div>
 
@@ -1315,6 +1633,7 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
         }};
         let currentSort = {{ column: 'f1', direction: 'desc' }};
         let activePredefinedFilter = null;
+        let currentChartRows = [];
 
         function getCurrentData() {{
             return allModelsData[currentModel];
@@ -1331,6 +1650,12 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
         document.addEventListener('DOMContentLoaded', function() {{
             updateChart();
             updateTable();
+        }});
+
+        window.addEventListener('resize', function() {{
+            if (currentChartRows.length) {{
+                window.requestAnimationFrame(() => renderChartLabels(currentChartRows));
+            }}
         }});
 
         function changeModel(modelName) {{
@@ -1476,76 +1801,25 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
             return metrics;
         }}
 
-        function updateChart() {{
-            const data = getCurrentData();
-            const metrics = getFilteredMetrics();
-
-            const x = [], y = [], text = [], colors = [];
-
-            for (const tool of data.tools) {{
-                const m = metrics[tool];
-                if (m && m.num_prs > 0) {{
-                    x.push(m.precision);
-                    y.push(m.recall);
-                    text.push(toolDisplayNames[tool] || tool);
-                    colors.push(toolColors[tool] || '#666');
-                }}
-            }}
-
-            const trace = {{
-                x: x,
-                y: y,
-                text: text,
-                mode: 'markers+text',
-                type: 'scatter',
-                textposition: 'top right',
-                textfont: {{ size: 12, color: '#666' }},
-                marker: {{
-                    size: 14,
-                    color: colors,
-                    line: {{ color: '#fff', width: 2 }}
-                }},
-                hovertemplate: '<b>%{{text}}</b><br>Precision: %{{x:.1f}}%<br>Recall: %{{y:.1f}}%<extra></extra>'
-            }};
-
-            const layout = {{
-                xaxis: {{
-                    title: {{ text: 'Precision (%)', font: {{ size: 12 }} }},
-                    range: [0, Math.max(...x, 10) + 10],
-                    gridcolor: '#f0f0f0',
-                    zeroline: false
-                }},
-                yaxis: {{
-                    title: {{ text: 'Recall (%)', font: {{ size: 12 }} }},
-                    range: [0, Math.max(...y, 10) + 10],
-                    gridcolor: '#f0f0f0',
-                    zeroline: false
-                }},
-                margin: {{ l: 60, r: 40, t: 20, b: 60 }},
-                paper_bgcolor: 'transparent',
-                plot_bgcolor: '#fff',
-                showlegend: false,
-                hovermode: 'closest'
-            }};
-
-            Plotly.newPlot('scatter-plot', [trace], layout, {{ responsive: true }});
-        }}
-
-        function updateTable() {{
-            const data = getCurrentData();
-            const metrics = getFilteredMetrics();
-            const tbody = document.getElementById('table-body');
-
-            let rows = Object.entries(metrics).map(([tool, m]) => ({{
+        function getMetricRows(metrics) {{
+            return Object.entries(metrics).map(([tool, m]) => ({{
                 tool: tool,
                 displayName: toolDisplayNames[tool] || tool,
                 color: toolColors[tool] || '#666',
+                logo: toolLogos[tool] || null,
                 ...m
             }}));
+        }}
 
+        function sortMetricRows(rows) {{
             rows.sort((a, b) => {{
                 const aVal = a[currentSort.column];
                 const bVal = b[currentSort.column];
+                if (currentSort.column === 'rank') {{
+                    return currentSort.direction === 'asc'
+                        ? a.f1 - b.f1
+                        : b.f1 - a.f1;
+                }}
                 if (currentSort.column === 'tool') {{
                     return currentSort.direction === 'asc'
                         ? a.displayName.localeCompare(b.displayName)
@@ -1553,9 +1827,156 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
                 }}
                 return currentSort.direction === 'asc' ? aVal - bVal : bVal - aVal;
             }});
+            return rows;
+        }}
 
-            tbody.innerHTML = rows.map(row => `
+        function updateChart() {{
+            const data = getCurrentData();
+            const metrics = getFilteredMetrics();
+
+            const rows = sortMetricRows(getMetricRows(metrics))
+                .filter(row => row.num_prs > 0);
+
+            rows.forEach((row, index) => {{
+                row.rank = index + 1;
+                row.rankLabel = row.rank <= 3 ? `#${{row.rank}}` : '';
+            }});
+            currentChartRows = rows;
+
+            const x = rows.map(row => row.precision);
+            const y = rows.map(row => row.recall);
+            const customdata = rows.map(row => [
+                row.rankLabel,
+                row.displayName,
+                row.f1,
+                row.precision,
+                row.recall,
+                row.num_prs
+            ]);
+            const xMin = Math.max(0, Math.min(...x, 0) - 8);
+            const xMax = Math.min(100, Math.max(...x, 10) + 10);
+            const yMin = Math.max(0, Math.min(...y, 0) - 8);
+            const yMax = Math.min(100, Math.max(...y, 10) + 10);
+
+            const trace = {{
+                x: x,
+                y: y,
+                customdata: customdata,
+                mode: 'markers',
+                type: 'scatter',
+                marker: {{
+                    size: 16,
+                    color: rows.map(row => row.color),
+                    opacity: 0.12,
+                    line: {{ color: '#fff', width: 2 }}
+                }},
+                hoverinfo: 'skip'
+            }};
+
+            const layout = {{
+                xaxis: {{
+                    title: {{ text: 'Precision | Less noisy →', font: {{ size: 12 }} }},
+                    range: [xMin, xMax],
+                    gridcolor: '#f0f0f0',
+                    zeroline: false
+                }},
+                yaxis: {{
+                    title: {{ text: 'Recall | More thorough →', font: {{ size: 12 }} }},
+                    range: [yMin, yMax],
+                    gridcolor: '#f0f0f0',
+                    zeroline: false
+                }},
+                margin: {{ l: 72, r: 180, t: 28, b: 72 }},
+                paper_bgcolor: 'transparent',
+                plot_bgcolor: '#fff',
+                showlegend: false,
+                hovermode: false
+            }};
+
+            Plotly.newPlot('scatter-plot', [trace], layout, {{ responsive: true, displayModeBar: false }})
+                .then(() => renderChartLabels(rows));
+        }}
+
+        function renderChartLabels(rows) {{
+            const plot = document.getElementById('scatter-plot');
+            const labels = document.getElementById('scatter-labels');
+            const tooltipLayer = document.getElementById('chart-tooltip-layer');
+            const chartContainer = plot.closest('.chart-container');
+            const layout = plot._fullLayout;
+
+            if (!labels || !tooltipLayer || !layout || !layout.xaxis || !layout.yaxis) return;
+
+            const plotRect = plot.getBoundingClientRect();
+            const containerRect = chartContainer.getBoundingClientRect();
+            labels.style.left = `${{plotRect.left - containerRect.left}}px`;
+            labels.style.top = `${{plotRect.top - containerRect.top}}px`;
+            labels.style.width = `${{plotRect.width}}px`;
+            labels.style.height = `${{plotRect.height}}px`;
+            tooltipLayer.style.left = `${{plotRect.left - containerRect.left}}px`;
+            tooltipLayer.style.top = `${{plotRect.top - containerRect.top}}px`;
+            tooltipLayer.style.width = `${{plotRect.width}}px`;
+            tooltipLayer.style.height = `${{plotRect.height}}px`;
+            tooltipLayer.innerHTML = '';
+
+            labels.innerHTML = rows.map(row => {{
+                const x = layout.margin.l + layout.xaxis.l2p(row.precision);
+                const y = layout.margin.t + layout.yaxis.l2p(row.recall);
+                const rankBadge = row.rank <= 3 ? `<span class="chart-rank-badge">#${{row.rank}}</span>` : '';
+                const icon = row.logo
+                    ? `<span class="chart-tool-icon"><img src="${{row.logo}}" alt=""></span>`
+                    : `<span class="chart-tool-icon" style="background:${{row.color}}">${{row.displayName.charAt(0)}}</span>`;
+
+                return `
+                    <div class="chart-tool-label ${{row.rank <= 3 ? 'top-rank' : ''}}" data-tool="${{row.tool}}" style="left:${{x}}px;top:${{y}}px">
+                        ${{icon}}
+                        <span>${{row.displayName}}</span>
+                        ${{rankBadge}}
+                    </div>
+                `;
+            }}).join('');
+
+            labels.querySelectorAll('.chart-tool-label').forEach(label => {{
+                const row = rows.find(item => item.tool === label.dataset.tool);
+                if (!row) return;
+
+                label.addEventListener('mouseenter', () => showChartTooltip(row, label, tooltipLayer, plotRect));
+                label.addEventListener('mouseleave', () => {{
+                    tooltipLayer.innerHTML = '';
+                }});
+            }});
+        }}
+
+        function showChartTooltip(row, label, tooltipLayer, plotRect) {{
+            const labelRect = label.getBoundingClientRect();
+            const tooltipHtml = `
+                <div class="chart-tooltip">
+                    <div class="chart-tooltip-title">${{row.rank <= 3 ? `#${{row.rank}} ` : ''}}${{row.displayName}}</div>
+                    <div class="chart-tooltip-row">F1 Score: ${{row.f1.toFixed(1)}}%</div>
+                    <div class="chart-tooltip-row">Precision: ${{row.precision.toFixed(1)}}%</div>
+                    <div class="chart-tooltip-row">Recall: ${{row.recall.toFixed(1)}}%</div>
+                    <div class="chart-tooltip-row">Sample Size: ${{row.num_prs}} PRs</div>
+                </div>
+            `;
+
+            tooltipLayer.innerHTML = tooltipHtml;
+            const tooltip = tooltipLayer.querySelector('.chart-tooltip');
+            const left = labelRect.left - plotRect.left + (labelRect.width / 2);
+            const top = labelRect.top - plotRect.top - 12;
+
+            tooltip.style.left = `${{left}}px`;
+            tooltip.style.top = `${{top}}px`;
+            tooltip.style.transform = 'translate(-50%, -100%)';
+        }}
+
+        function updateTable() {{
+            const metrics = getFilteredMetrics();
+            const tbody = document.getElementById('table-body');
+
+            let rows = sortMetricRows(getMetricRows(metrics));
+
+            tbody.innerHTML = rows.map((row, index) => `
                 <tr>
+                    <td>${{index + 1}}</td>
                     <td>
                         <div class="tool-cell">
                             ${{toolLogos[row.tool]
@@ -1602,11 +2023,24 @@ def generate_html(all_models_data: dict, default_model: str, tool_logos: dict | 
                 currentSort.column = column;
                 currentSort.direction = 'desc';
             }}
+            updateChart();
             updateTable();
         }}
 
         function toggleMore(elementId) {{
             document.getElementById(elementId).classList.toggle('hidden');
+        }}
+
+        function togglePresetOverflow() {{
+            const overflow = document.getElementById('preset-overflow');
+            const toggle = document.getElementById('preset-toggle');
+            const label = document.getElementById('preset-toggle-label');
+            const icon = document.getElementById('preset-toggle-icon');
+            const isExpanded = overflow.classList.toggle('hidden') === false;
+
+            toggle.setAttribute('aria-expanded', isExpanded ? 'true' : 'false');
+            label.textContent = isExpanded ? 'Less' : 'More';
+            icon.textContent = isExpanded ? '-' : '+';
         }}
 
         function shareResults() {{
