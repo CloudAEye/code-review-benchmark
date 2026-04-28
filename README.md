@@ -20,19 +20,11 @@
 
 Open-source [benchmark](https://codereview.withmartian.com) for evaluating AI code review tools — the datasets, the judge, and the pipeline code. Reproduce our results or evaluate your own tool.
 
-## Benchmark outputs
+![Benchmark results](images/bar.png)
 
-The main offline analysis artifacts in this repository are:
+![Gartner](images/gartner.png)
 
-- Dashboard: [`offline/analysis/benchmark_dashboard.html`](offline/analysis/benchmark_dashboard.html)
-
-## The problem
-
-As AI agents write more code, we need systems to make sure the code they generate is good. This has led to the proliferation of AI code review tools.
-
-Without shared evals for these tools, every company grades its own homework. You can't reproduce the results, compare tools on the same dataset, or verify the methodology. With static evals, agents can game the benchmark. By creating an online and offline benchmark that can check each other, this project allows for robust code review evals.
-
-**We open-source everything**: the PRs, the golden comments, the LLM judge prompts, the evaluation pipeline, and a continuously-updated online benchmark that avoids training data leakage.
+[Detailed report](https://www.cloudaeye.com/products/code-review/benchmark-2026/report/index.html)
 
 ## Two benchmarks
 

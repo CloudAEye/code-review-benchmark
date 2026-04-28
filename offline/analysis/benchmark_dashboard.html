@@ -19,9 +19,13 @@
         color: #1a1a1a;
       }
       .predefined-filters {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: nowrap;
         background: #fff;
         border-bottom: 1px solid #e5e5e5;
-        padding: 16px 56px;
+        padding: 22px 48px;
       }
       .predefined-filters-row {
         display: flex;
@@ -59,14 +63,14 @@
         margin-left: auto;
         display: inline-flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         border: 0;
         background: transparent;
-        color: #666;
+        color: #333;
         cursor: pointer;
-        font-size: 14px;
-        font-weight: 600;
-        padding: 8px 0 8px 16px;
+        font-size: 15px;
+        font-weight: 500;
+        padding: 8px 0 8px 18px;
       }
       .preset-toggle:hover {
         color: #1a1a1a;
@@ -76,23 +80,80 @@
         line-height: 1;
       }
       .predefined-filter {
-        display: flex;
+        display: none;
         align-items: center;
         gap: 10px;
-        padding: 8px 16px;
+        padding: 8px 18px;
         border: 1px solid #e5e5e5;
         border-radius: 6px;
         background: #fff;
         cursor: pointer;
-        font-size: 14px;
-        color: #4a4a4a;
+        font-size: 15px;
+        color: #2f2f2f;
         transition: all 0.2s;
         white-space: nowrap;
         min-height: 36px;
       }
+      .predefined-filter[data-filter-id="high_precision"],
+      .predefined-filter[data-filter-id="tool_kodus-v2_domain_concurrency"],
+      .predefined-filter[data-filter-id="tool_kg_complexity_complex"],
+      .predefined-filter[data-filter-id="tool_propel-v2_risk_high_context_file"],
+      .predefined-filters.expanded .predefined-filter {
+        display: flex;
+      }
+      .predefined-filter[data-filter-id="high_precision"] {
+        order: 1;
+      }
+      .predefined-filter[data-filter-id="tool_kodus-v2_domain_concurrency"] {
+        order: 2;
+      }
+      .predefined-filter[data-filter-id="tool_kg_complexity_complex"] {
+        order: 3;
+      }
+      .predefined-filter[data-filter-id="tool_propel-v2_risk_high_context_file"] {
+        order: 4;
+      }
+      .predefined-filters.expanded {
+        align-items: flex-start;
+        flex-wrap: wrap;
+      }
+      .predefined-filters.expanded .predefined-filter {
+        order: 6;
+      }
+      .predefined-filters.expanded
+        .predefined-filter[data-filter-id="high_precision"] {
+        order: 1;
+      }
+      .predefined-filters.expanded
+        .predefined-filter[data-filter-id="tool_kodus-v2_domain_concurrency"] {
+        order: 2;
+      }
+      .predefined-filters.expanded
+        .predefined-filter[data-filter-id="tool_kg_complexity_complex"] {
+        order: 3;
+      }
+      .predefined-filters.expanded
+        .predefined-filter[data-filter-id="tool_propel-v2_risk_high_context_file"] {
+        order: 4;
+      }
+      .predefined-filters.expanded .preset-toggle {
+        order: 999;
+      }
+      .predefined-label {
+        order: 0;
+      }
+      .preset-toggle {
+        order: 5;
+      }
       .predefined-filter:hover {
         border-color: #999;
         color: #333;
+      }
+      .predefined-filter::before {
+        content: "♕";
+        color: #1a1a1a;
+        font-size: 15px;
+        line-height: 1;
       }
       .predefined-filter.active {
         background: #1a1a1a;
@@ -375,6 +436,62 @@
       .data-table tr:hover {
         background: #fafafa;
       }
+      .f1-chart-panel {
+        border-top: 1px solid #e5e5e5;
+        padding: 32px 20px 8px;
+      }
+      .f1-chart-title {
+        margin-bottom: 12px;
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+      }
+      #f1-bar-chart {
+        width: 100%;
+        height: 360px;
+      }
+      .f1-axis-labels {
+        display: grid;
+        gap: 0;
+        padding: 0 24px 0 48px;
+        min-height: 96px;
+      }
+      .f1-axis-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+      }
+      .f1-axis-icon {
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 auto;
+        overflow: hidden;
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .f1-axis-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .f1-axis-name {
+        max-width: 56px;
+        color: #4b5563;
+        font-size: 12px;
+        line-height: 1;
+        text-align: center;
+        writing-mode: vertical-rl;
+        transform: rotate(180deg);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
       .tool-cell {
         display: flex;
         align-items: center;
@@ -529,7 +646,18 @@
     </style>
   </head>
   <body>
-    <div class="predefined-filters">
+    <div class="predefined-filters" id="preset-bar">
+      <span class="predefined-label">Quick Presets:</span>
+      <button
+        class="preset-toggle"
+        id="preset-toggle"
+        type="button"
+        aria-expanded="false"
+        onclick="togglePresetOverflow()"
+      >
+        <span id="preset-toggle-label">More</span>
+        <span class="preset-toggle-icon" id="preset-toggle-icon">+</span>
+      </button>
       <div
         class="predefined-filter"
         data-filter-id="high_precision"
@@ -1324,7 +1452,7 @@
           <div>
             <div class="results-label">CURRENT RESULTS</div>
             <div class="results-title" id="results-title">
-              All Tools
+              All Languages
               <span
                 class="legend-dot"
                 style="
@@ -1361,6 +1489,11 @@
             </thead>
             <tbody id="table-body"></tbody>
           </table>
+          <div class="f1-chart-panel">
+            <div class="f1-chart-title">F1 Score by Tool</div>
+            <div id="f1-bar-chart"></div>
+            <div class="f1-axis-labels" id="f1-axis-labels"></div>
+          </div>
         </div>
 
         <section
@@ -8986,8 +9119,10 @@
               ? `<span class="chart-tool-icon"><img src="${row.logo}" alt=""></span>`
               : `<span class="chart-tool-icon" style="background:${row.color}">${row.displayName.charAt(0)}</span>`;
 
+            const zIndex = row.rank <= 3 ? 100 - row.rank : 1;
+
             return `
-                    <div class="chart-tool-label ${row.rank <= 3 ? "top-rank" : ""}" data-tool="${row.tool}" style="left:${x}px;top:${y}px">
+                    <div class="chart-tool-label ${row.rank <= 3 ? "top-rank" : ""}" data-tool="${row.tool}" style="left:${x}px;top:${y}px;z-index:${zIndex}">
                         ${icon}
                         <span>${row.displayName}</span>
                         ${rankBadge}
@@ -9082,6 +9217,94 @@
             `,
           )
           .join("");
+
+        renderF1BarChart(rows);
+      }
+
+      function renderF1BarChart(rows) {
+        const chart = document.getElementById("f1-bar-chart");
+        const axisLabels = document.getElementById("f1-axis-labels");
+        if (!chart) return;
+
+        const chartRows = [...rows]
+          .filter((row) => row.num_prs > 0)
+          .sort((a, b) => b.f1 - a.f1);
+
+        if (!chartRows.length) {
+          Plotly.purge(chart);
+          if (axisLabels) axisLabels.innerHTML = "";
+          return;
+        }
+
+        const yMax = Math.min(
+          100,
+          Math.max(...chartRows.map((row) => row.f1), 10) + 10,
+        );
+
+        const trace = {
+          x: chartRows.map((row) => row.displayName),
+          y: chartRows.map((row) => row.f1),
+          customdata: chartRows.map((row) => [
+            row.precision,
+            row.recall,
+            row.num_prs,
+          ]),
+          type: "bar",
+          marker: {
+            color: "#5b3ff4",
+          },
+          text: chartRows.map((row) => `${row.f1.toFixed(1)}%`),
+          textposition: "outside",
+          textfont: {
+            color: "#5b3ff4",
+            size: 12,
+          },
+          cliponaxis: false,
+          hovertemplate:
+            "<b>%{x}</b><br>F1 Score: %{y:.1f}%<br>Precision: %{customdata[0]:.1f}%<br>Recall: %{customdata[1]:.1f}%<br>PRs Evaluated: %{customdata[2]}<extra></extra>",
+        };
+
+        const layout = {
+          margin: { l: 48, r: 24, t: 24, b: 8 },
+          paper_bgcolor: "transparent",
+          plot_bgcolor: "#fff",
+          showlegend: false,
+          bargap: 0.45,
+          xaxis: {
+            showticklabels: false,
+            ticks: "",
+          },
+          yaxis: {
+            range: [0, yMax],
+            ticksuffix: "%",
+            gridcolor: "#eeeeee",
+            zeroline: false,
+            tickfont: { color: "#5b3ff4" },
+          },
+        };
+
+        Plotly.newPlot(chart, [trace], layout, {
+          responsive: true,
+          displayModeBar: false,
+        });
+
+        if (axisLabels) {
+          axisLabels.style.gridTemplateColumns = `repeat(${chartRows.length}, minmax(0, 1fr))`;
+          axisLabels.innerHTML = chartRows
+            .map((row) => {
+              const icon = row.logo
+                ? `<span class="f1-axis-icon"><img src="${row.logo}" alt=""></span>`
+                : `<span class="f1-axis-icon" style="background:${row.color};border-radius:5px">${row.displayName.charAt(0)}</span>`;
+
+              return `
+                <div class="f1-axis-item" title="${row.displayName}">
+                  ${icon}
+                  <span class="f1-axis-name">${row.displayName}</span>
+                </div>
+              `;
+            })
+            .join("");
+        }
       }
 
       function sortTable(column) {
@@ -9101,11 +9324,11 @@
       }
 
       function togglePresetOverflow() {
-        const overflow = document.getElementById("preset-overflow");
+        const presetBar = document.getElementById("preset-bar");
         const toggle = document.getElementById("preset-toggle");
         const label = document.getElementById("preset-toggle-label");
         const icon = document.getElementById("preset-toggle-icon");
-        const isExpanded = overflow.classList.toggle("hidden") === false;
+        const isExpanded = presetBar.classList.toggle("expanded");
 
         toggle.setAttribute("aria-expanded", isExpanded ? "true" : "false");
         label.textContent = isExpanded ? "Less" : "More";
