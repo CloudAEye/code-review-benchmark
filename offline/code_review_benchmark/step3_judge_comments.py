@@ -390,6 +390,16 @@ async def main():
         metavar="FILE",
         help="Override the default evaluations.json output path (useful for comparison runs)",
     )
+    parser.add_argument(
+        "--repo",
+        metavar="SUBSTR",
+        help="Only evaluate PRs whose golden_url contains this substring (e.g. 'calcom/cal.com')",
+    )
+    parser.add_argument(
+        "--candidates-file",
+        metavar="FILE",
+        help="Override the candidates.json path (useful for re-using candidates from another model run)",
+    )
     args = parser.parse_args()
 
     load_dotenv()
@@ -410,8 +420,10 @@ async def main():
 
     print(f"Model dir: {model_dir}")
 
-    # Load candidates
+    # Load candidates (override file takes priority)
     all_candidates = {}
+    if args.candidates_file:
+        candidates_file = Path(args.candidates_file)
     if candidates_file.exists():
         with open(candidates_file) as f:
             all_candidates = json.load(f)
@@ -449,6 +461,8 @@ async def main():
     # Build work items list
     work_items = []
     for golden_url, entry in benchmark_data.items():
+        if args.repo and args.repo not in golden_url:
+            continue
         golden_comments = entry.get("golden_comments", [])
         for review in entry.get("reviews", []):
             tool = review["tool"]
