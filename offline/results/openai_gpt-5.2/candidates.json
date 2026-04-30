@@ -1188,5 +1188,21 @@
         "source": "extracted"
       }
     ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
+    "cloudaeye": [
+      {
+        "text": "Client-side rejectedEmails cache causes valid emails to remain blocked after a transient server-side rejection because rejectedEmails is never cleared on email edit/retry/success in create_account_controller.js",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-atomic match_count increment in blocked_email.rb (read/modify/write with save) can lose increments under concurrent requests due to missing locking or atomic counter update",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   }
 }

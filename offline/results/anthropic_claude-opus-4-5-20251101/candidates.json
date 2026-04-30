@@ -1122,5 +1122,21 @@
         "source": "extracted"
       }
     ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
+    "cloudaeye": [
+      {
+        "text": "Stale invalid email rejection: valid addresses stay blocked when server rejected same email once transiently because rejectedEmails cache is never cleared on email edits, retry, or success",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition loses match_count increments: non-atomic read/modify/write on ActiveRecord row where concurrent requests can both read the same prior value and overwrite each other",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   }
 }

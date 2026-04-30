@@ -1152,5 +1152,21 @@
         "source": "extracted"
       }
     ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
+    "cloudaeye": [
+      {
+        "text": "Stale email rejection: valid addresses stay blocked when server rejected same email once transiently. rejectedEmails cache is never cleared on email edits, retry, or success in create_account_controller.js",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition in blocked_email.rb: non-atomic read/modify/write on match_count field loses increments when concurrent requests update the same record",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
   }
 }
