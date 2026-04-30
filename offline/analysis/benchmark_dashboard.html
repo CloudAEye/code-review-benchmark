@@ -302,7 +302,7 @@
       }
       #scatter-labels {
         position: absolute;
-        pointer-events: none;
+        pointer-events: auto;
         z-index: 2;
       }
       #chart-tooltip-layer {
@@ -646,6 +646,7 @@
     </style>
   </head>
   <body>
+    <div id="site-header" data-base-path="../../../../"></div>
     <div class="predefined-filters" id="preset-bar">
       <span class="predefined-label">Quick Presets:</span>
       <button
@@ -791,17 +792,6 @@
       </div>
       <div
         class="predefined-filter"
-        data-filter-id="tool_qodo-extended_change_type_bug_fix_context_cross_file"
-        onclick="
-          applyPredefinedFilter(
-            'tool_qodo-extended_change_type_bug_fix_context_cross_file',
-          )
-        "
-      >
-        Bug Fixes + Cross-File <span class="arrow">↗</span>
-      </div>
-      <div
-        class="predefined-filter"
         data-filter-id="tool_qodo-v2_concern_reliability"
         onclick="applyPredefinedFilter('tool_qodo-v2_concern_reliability')"
       >
@@ -821,15 +811,6 @@
           applyPredefinedFilter(
             'tool_macroscope_language_ruby_concern_correctness',
           )
-        "
-      >
-        Ruby + Correctness <span class="arrow">↗</span>
-      </div>
-      <div
-        class="predefined-filter"
-        data-filter-id="tool_propel_language_ruby_concern_correctness"
-        onclick="
-          applyPredefinedFilter('tool_propel_language_ruby_concern_correctness')
         "
       >
         Ruby + Correctness <span class="arrow">↗</span>
@@ -3534,9 +3515,7 @@
             "kg",
             "kodus-v2",
             "macroscope",
-            "propel",
             "propel-v2",
-            "qodo-extended",
             "qodo-extended-v2",
             "qodo-v2",
             "sourcery",
@@ -5659,8 +5638,7 @@
             "kg",
             "kodus-v2",
             "macroscope",
-            "propel",
-            "qodo-extended",
+            "propel-v2",
             "qodo-extended-v2",
             "qodo-v2",
             "sourcery",
@@ -7824,9 +7802,7 @@
             "kg",
             "kodus-v2",
             "macroscope",
-            "propel",
             "propel-v2",
-            "qodo-extended",
             "qodo-extended-v2",
             "qodo-v2",
             "sourcery",
@@ -8083,31 +8059,52 @@
         graphite: "Graphite",
         qodo: "Qodo",
         gemini: "Gemini",
-        claude: "Claude Code",
+        claude: "Claude Code Reviewer",
         augment: "Augment",
         bugbot: "Cursor Bugbot",
         coderabbit: "CodeRabbit",
         propel: "Propel",
+        "propel-v2": "Propel",
         copilot: "GitHub Copilot",
         baz: "Baz",
         greptile: "Greptile",
+        "greptile-v4-1": "Greptile",
         kg: "Kilo+Grok",
         entelligence: "Entelligence",
         "cubic-dev": "Cubic",
         sourcery: "Sourcery",
         mesa: "Mesa",
         codeant: "CodeAnt",
-        "codeant-v2": "CodeAnt v2",
-        "claude-code": "Claude Code (CLI)",
+        "codeant-v2": "CodeAnt",
+        "claude-code": "Claude Code Plugin",
         devin: "Devin",
         "kodus-v2": "Kodus",
         "greptile-v4": "Greptile v4",
-        "qodo-v2": "Qodo v2",
+        "qodo-v2": "Qodo",
         "qodo-extended-v2": "Qodo Extended",
         macroscope: "Macroscope",
-        "cubic-v2": "Cubic v2",
+        "cubic-v2": "Cubic Dev",
         cloudaeye: "CloudAEye",
       };
+      const excludedReportTools = new Set(["qodo-extended"]);
+
+      function normalizeReportMetrics(metrics) {
+        const normalized = {};
+        const hasPropelV2 = Boolean(metrics?.["propel-v2"]);
+
+        for (const [tool, metric] of Object.entries(metrics || {})) {
+          if (excludedReportTools.has(tool)) continue;
+          if (tool === "propel") {
+            if (!hasPropelV2) {
+              normalized["propel-v2"] = metric;
+            }
+            continue;
+          }
+          normalized[tool] = metric;
+        }
+
+        return normalized;
+      }
       const toolColors = {
         graphite: "#6366f1",
         qodo: "#8b5cf6",
@@ -8384,15 +8381,6 @@
           best_score: 66.7,
         },
         {
-          id: "tool_qodo-extended_change_type_bug_fix_context_cross_file",
-          label: "Bug Fixes + Cross-File",
-          filters: { change_type: ["bug_fix"], context: ["cross_file"] },
-          description: "Bug fixes and issue resolution Spans multiple files.",
-          best_model: "openai_gpt-5.2",
-          best_tool: "qodo-extended",
-          best_score: 66.7,
-        },
-        {
           id: "tool_qodo-v2_concern_reliability",
           label: "Best for Reliability",
           filters: { concern: ["reliability"] },
@@ -8418,16 +8406,6 @@
             "Ruby codebases with Rails patterns. Logical correctness and expected behavior",
           best_model: "anthropic_claude-opus-4-5-20251101",
           best_tool: "macroscope",
-          best_score: 57.9,
-        },
-        {
-          id: "tool_propel_language_ruby_concern_correctness",
-          label: "Ruby + Correctness",
-          filters: { language: ["Ruby"], concern: ["correctness"] },
-          description:
-            "Ruby codebases with Rails patterns. Logical correctness and expected behavior",
-          best_model: "anthropic_claude-opus-4-5-20251101",
-          best_tool: "propel",
           best_score: 57.9,
         },
         {
@@ -8894,7 +8872,7 @@
         );
 
         if (!hasFilters) {
-          return data.overall_metrics;
+          return normalizeReportMetrics(data.overall_metrics);
         }
 
         const filteredPRs = data.prs.filter((pr) => {
@@ -8948,15 +8926,22 @@
 
         const metrics = {};
         for (const tool of data.tools) {
+          if (excludedReportTools.has(tool) || tool === "propel") continue;
+          const metricTool =
+            tool === "propel-v2" &&
+            !data.overall_metrics?.["propel-v2"] &&
+            data.overall_metrics?.propel
+              ? "propel"
+              : tool;
           let tp = 0,
             fp = 0,
             fn = 0,
             numPrs = 0;
           for (const pr of filteredPRs) {
-            if (pr.tool_metrics[tool]) {
-              tp += pr.tool_metrics[tool].tp;
-              fp += pr.tool_metrics[tool].fp;
-              fn += pr.tool_metrics[tool].fn;
+            if (pr.tool_metrics[metricTool]) {
+              tp += pr.tool_metrics[metricTool].tp;
+              fp += pr.tool_metrics[metricTool].fp;
+              fn += pr.tool_metrics[metricTool].fn;
               numPrs++;
             }
           }
@@ -8983,13 +8968,15 @@
       }
 
       function getMetricRows(metrics) {
-        return Object.entries(metrics).map(([tool, m]) => ({
-          tool: tool,
-          displayName: toolDisplayNames[tool] || tool,
-          color: toolColors[tool] || "#666",
-          logo: toolLogos[tool] || null,
-          ...m,
-        }));
+        return Object.entries(metrics)
+          .filter(([tool]) => !excludedReportTools.has(tool) && tool !== "propel")
+          .map(([tool, m]) => ({
+            tool: tool,
+            displayName: toolDisplayNames[tool] || tool,
+            color: toolColors[tool] || "#666",
+            logo: toolLogos[tool] || null,
+            ...m,
+          }));
       }
 
       function sortMetricRows(rows) {
@@ -9131,17 +9118,20 @@
           })
           .join("");
 
-        labels.querySelectorAll(".chart-tool-label").forEach((label) => {
-          const row = rows.find((item) => item.tool === label.dataset.tool);
+        const rowsByTool = new Map(rows.map((row) => [row.tool, row]));
+        labels.onmouseover = (event) => {
+          const label = event.target.closest(".chart-tool-label");
+          if (!label || !labels.contains(label)) return;
+          const row = rowsByTool.get(label.dataset.tool);
           if (!row) return;
-
-          label.addEventListener("mouseenter", () =>
-            showChartTooltip(row, label, tooltipLayer, plotRect),
-          );
-          label.addEventListener("mouseleave", () => {
-            tooltipLayer.innerHTML = "";
-          });
-        });
+          showChartTooltip(row, label, tooltipLayer, plotRect);
+        };
+        labels.onmouseout = (event) => {
+          const label = event.target.closest(".chart-tool-label");
+          if (!label || !labels.contains(label)) return;
+          if (label.contains(event.relatedTarget)) return;
+          tooltipLayer.innerHTML = "";
+        };
       }
 
       function showChartTooltip(row, label, tooltipLayer, plotRect) {
