@@ -883,28 +883,6 @@
       }
     ]
   },
-  "https://github.com/calcom/cal.com/pull/22532": {
-    "cloudaeye": [
-      {
-        "text": "sed -i command uses BSD/macOS-specific syntax (sed -i '' -E) that fails on Linux with GNU sed in scripts/test-gcal-webhooks.sh:67-69",
-        "path": null,
-        "line": null,
-        "source": "extracted"
-      },
-      {
-        "text": "Shared log file /tmp/tmole.log creates race condition when multiple script instances run concurrently, causing wrong webhook URL to be reused",
-        "path": null,
-        "line": null,
-        "source": "extracted"
-      },
-      {
-        "text": "Fixed 10-second timeout for tmole startup polling is insufficient for slow initialization, causing premature failure in scripts/test-gcal-webhooks.sh:41-52",
-        "path": null,
-        "line": null,
-        "source": "extracted"
-      }
-    ]
-  },
   "https://github.com/calcom/cal.com/pull/8330": {
     "cloudaeye": [
       {
@@ -1147,6 +1125,44 @@
       },
       {
         "text": "Promise error: async forEach cleanup unawaited in packages/trpc/server/routers/viewer/bookings.tsx - calendar deletions escape error handling when delete/getCalendar rejects",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
+    "cloudaeye": [
+      {
+        "text": "Stale email rejection: valid addresses stay blocked when server rejected same email once transiently. rejectedEmails cache is never cleared on email edits, retry, or success in create_account_controller.js",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Race condition in blocked_email.rb: non-atomic read/modify/write on match_count field loses increments when concurrent requests update the same record",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/22532": {
+    "cloudaeye": [
+      {
+        "text": "sed -i command uses BSD/macOS-specific syntax that fails on GNU sed in Linux environments",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Shared log file at /tmp/tmole.log creates race condition when multiple script instances run concurrently, causing wrong webhook URL to be reused",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fixed 10-second timeout for tmole startup polling causes failure when initialization takes longer than expected",
         "path": null,
         "line": null,
         "source": "extracted"

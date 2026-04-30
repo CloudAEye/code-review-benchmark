@@ -913,28 +913,6 @@
       }
     ]
   },
-  "https://github.com/calcom/cal.com/pull/22532": {
-    "cloudaeye": [
-      {
-        "text": "Script uses BSD/macOS-specific `sed -i '' -E` syntax, causing runtime failure on Linux hosts with GNU sed when updating the .env file",
-        "path": null,
-        "line": null,
-        "source": "extracted"
-      },
-      {
-        "text": "Hard-coded shared log file `/tmp/tmole.log` with no locking or per-process isolation creates a race condition where concurrent script runs can overwrite/read each other\u2019s tmole output and reuse the wrong webhook URL",
-        "path": null,
-        "line": null,
-        "source": "extracted"
-      },
-      {
-        "text": "Fixed startup polling timeout (~10 seconds) can be too short; if tmole initializes slower, the script incorrectly treats it as failure and exits",
-        "path": null,
-        "line": null,
-        "source": "extracted"
-      }
-    ]
-  },
   "https://github.com/calcom/cal.com/pull/8330": {
     "cloudaeye": [
       {
@@ -1183,6 +1161,44 @@
       },
       {
         "text": "In packages/app-store/wipemycalother/lib/reschedule.ts, using bookingRefsFiltered.forEach(async ...) causes getCalendar/deleteEvent/deleteMeeting rejections to escape the surrounding try/catch because forEach does not await async callbacks",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://github.com/ai-code-review-evaluation/discourse-graphite/pull/3": {
+    "cloudaeye": [
+      {
+        "text": "Client-side rejectedEmails cache causes valid emails to remain blocked after a transient server-side rejection because rejectedEmails is never cleared on email edit/retry/success in create_account_controller.js",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Non-atomic read/modify/write of BlockedEmail.match_count (match_count += 1 then save) can lose increments under concurrent requests; needs locking or atomic counter update",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      }
+    ]
+  },
+  "https://github.com/calcom/cal.com/pull/22532": {
+    "cloudaeye": [
+      {
+        "text": "Using BSD/macOS-specific `sed -i '' -E` syntax in `scripts/test-gcal-webhooks.sh` breaks on Linux/GNU sed, causing the env update to fail",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Hard-coded shared log file `/tmp/tmole.log` with no locking or per-process isolation creates a race condition where concurrent script runs can overwrite/read each other\u2019s tmole output and reuse the wrong webhook/tunnel URL",
+        "path": null,
+        "line": null,
+        "source": "extracted"
+      },
+      {
+        "text": "Fixed startup polling timeout (~10 seconds) can be too short; if tmole initializes slower, the script fails and exits even though the tunnel might become ready shortly after",
         "path": null,
         "line": null,
         "source": "extracted"
