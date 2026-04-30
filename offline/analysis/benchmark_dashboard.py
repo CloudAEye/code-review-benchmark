@@ -55,7 +55,7 @@ TOOL_DISPLAY_NAMES = {
     "copilot": "GitHub Copilot",
     "baz": "Baz",
     "greptile": "Greptile",
-    "kg": "Kilo+Grok",
+    "kg": "KG",
     "entelligence": "Entelligence",
     "cubic-dev": "Cubic",
     "sourcery": "Sourcery",
