@@ -3637,7 +3637,7 @@
             },
             "cloudaeye": {
               "tp": 0,
-              "fp": 0,
+              "fp": 1,
               "fn": 1
             }
           }
@@ -4546,9 +4546,9 @@
               "fn": 1
             },
             "cloudaeye": {
-              "tp": 0,
-              "fp": 0,
-              "fn": 2
+              "tp": 1,
+              "fp": 1,
+              "fn": 1
             }
           }
         },
@@ -5717,7 +5717,7 @@
             },
             "cloudaeye": {
               "tp": 0,
-              "fp": 0,
+              "fp": 1,
               "fn": 2
             }
           }
@@ -6595,69 +6595,6 @@
         ]
       },
       "overall_metrics": {
-        "devin": {
-          "precision": 54.3,
-          "recall": 37.2,
-          "f1": 44.2,
-          "tp": 51,
-          "fp": 43,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "propel-v2": {
-          "precision": 44.4,
-          "recall": 49.6,
-          "f1": 46.9,
-          "tp": 68,
-          "fp": 85,
-          "fn": 69,
-          "num_prs": 50
-        },
-        "cloudaeye": {
-          "precision": 62.4,
-          "recall": 71.5,
-          "f1": 66.7,
-          "tp": 98,
-          "fp": 59,
-          "fn": 39,
-          "num_prs": 50
-        },
-        "kodus-v2": {
-          "precision": 46.7,
-          "recall": 35.8,
-          "f1": 40.5,
-          "tp": 49,
-          "fp": 56,
-          "fn": 88,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 100.0,
-          "recall": 8.8,
-          "f1": 16.1,
-          "tp": 12,
-          "fp": 0,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 50.0,
-          "recall": 16.8,
-          "f1": 25.1,
-          "tp": 23,
-          "fp": 23,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 49.0,
-          "recall": 34.3,
-          "f1": 40.3,
-          "tp": 47,
-          "fp": 49,
-          "fn": 90,
-          "num_prs": 50
-        },
         "bugbot": {
           "precision": 47.2,
           "recall": 43.8,
@@ -6665,105 +6602,6 @@
           "tp": 60,
           "fp": 67,
           "fn": 77,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 47.5,
-          "recall": 61.3,
-          "f1": 53.5,
-          "tp": 84,
-          "fp": 93,
-          "fn": 53,
-          "num_prs": 50
-        },
-        "qodo-extended-v2": {
-          "precision": 54.9,
-          "recall": 61.3,
-          "f1": 57.9,
-          "tp": 84,
-          "fp": 69,
-          "fn": 53,
-          "num_prs": 50
-        },
-        "cubic-v2": {
-          "precision": 56.3,
-          "recall": 68.6,
-          "f1": 61.8,
-          "tp": 94,
-          "fp": 73,
-          "fn": 43,
-          "num_prs": 50
-        },
-        "claude-code": {
-          "precision": 34.8,
-          "recall": 40.9,
-          "f1": 37.6,
-          "tp": 56,
-          "fp": 105,
-          "fn": 81,
-          "num_prs": 50
-        },
-        "sourcery": {
-          "precision": 33.3,
-          "recall": 51.8,
-          "f1": 40.6,
-          "tp": 71,
-          "fp": 142,
-          "fn": 66,
-          "num_prs": 50
-        },
-        "qodo-v2": {
-          "precision": 42.9,
-          "recall": 55.5,
-          "f1": 48.4,
-          "tp": 76,
-          "fp": 101,
-          "fn": 61,
-          "num_prs": 50
-        },
-        "macroscope": {
-          "precision": 48.4,
-          "recall": 43.8,
-          "f1": 46.0,
-          "tp": 60,
-          "fp": 64,
-          "fn": 77,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 55.8,
-          "recall": 38.7,
-          "f1": 45.7,
-          "tp": 53,
-          "fp": 42,
-          "fn": 84,
-          "num_prs": 50
-        },
-        "claude": {
-          "precision": 34.8,
-          "recall": 35.8,
-          "f1": 35.3,
-          "tp": 49,
-          "fp": 92,
-          "fn": 88,
-          "num_prs": 50
-        },
-        "copilot": {
-          "precision": 28.3,
-          "recall": 53.3,
-          "f1": 37.0,
-          "tp": 73,
-          "fp": 185,
-          "fn": 64,
-          "num_prs": 50
-        },
-        "qodo-extended": {
-          "precision": 37.2,
-          "recall": 62.8,
-          "f1": 46.7,
-          "tp": 86,
-          "fp": 145,
-          "fn": 51,
           "num_prs": 50
         },
         "greptile-v4-1": {
@@ -6775,13 +6613,94 @@
           "fn": 71,
           "num_prs": 50
         },
-        "coderabbit": {
-          "precision": 25.7,
-          "recall": 56.2,
-          "f1": 35.2,
-          "tp": 77,
-          "fp": 223,
-          "fn": 60,
+        "devin": {
+          "precision": 54.3,
+          "recall": 37.2,
+          "f1": 44.2,
+          "tp": 51,
+          "fp": 43,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "macroscope": {
+          "precision": 48.4,
+          "recall": 43.8,
+          "f1": 46.0,
+          "tp": 60,
+          "fp": 64,
+          "fn": 77,
+          "num_prs": 50
+        },
+        "cubic-v2": {
+          "precision": 56.3,
+          "recall": 68.6,
+          "f1": 61.8,
+          "tp": 94,
+          "fp": 73,
+          "fn": 43,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 55.8,
+          "recall": 38.7,
+          "f1": 45.7,
+          "tp": 53,
+          "fp": 42,
+          "fn": 84,
+          "num_prs": 50
+        },
+        "sourcery": {
+          "precision": 33.3,
+          "recall": 51.8,
+          "f1": 40.6,
+          "tp": 71,
+          "fp": 142,
+          "fn": 66,
+          "num_prs": 50
+        },
+        "claude-code": {
+          "precision": 34.8,
+          "recall": 40.9,
+          "f1": 37.6,
+          "tp": 56,
+          "fp": 105,
+          "fn": 81,
+          "num_prs": 50
+        },
+        "propel-v2": {
+          "precision": 44.4,
+          "recall": 49.6,
+          "f1": 46.9,
+          "tp": 68,
+          "fp": 85,
+          "fn": 69,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 47.5,
+          "recall": 61.3,
+          "f1": 53.5,
+          "tp": 84,
+          "fp": 93,
+          "fn": 53,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 50.0,
+          "recall": 16.8,
+          "f1": 25.1,
+          "tp": 23,
+          "fp": 23,
+          "fn": 114,
+          "num_prs": 50
+        },
+        "qodo-extended-v2": {
+          "precision": 54.9,
+          "recall": 61.3,
+          "f1": 57.9,
+          "tp": 84,
+          "fp": 69,
+          "fn": 53,
           "num_prs": 50
         },
         "gemini": {
@@ -6793,6 +6712,33 @@
           "fn": 86,
           "num_prs": 50
         },
+        "copilot": {
+          "precision": 28.3,
+          "recall": 53.3,
+          "f1": 37.0,
+          "tp": 73,
+          "fp": 185,
+          "fn": 64,
+          "num_prs": 50
+        },
+        "graphite": {
+          "precision": 100.0,
+          "recall": 8.8,
+          "f1": 16.1,
+          "tp": 12,
+          "fp": 0,
+          "fn": 125,
+          "num_prs": 50
+        },
+        "qodo-v2": {
+          "precision": 42.9,
+          "recall": 55.5,
+          "f1": 48.4,
+          "tp": 76,
+          "fp": 101,
+          "fn": 61,
+          "num_prs": 50
+        },
         "codeant-v2": {
           "precision": 31.9,
           "recall": 38.0,
@@ -6800,6 +6746,60 @@
           "tp": 52,
           "fp": 111,
           "fn": 85,
+          "num_prs": 50
+        },
+        "kodus-v2": {
+          "precision": 46.7,
+          "recall": 35.8,
+          "f1": 40.5,
+          "tp": 49,
+          "fp": 56,
+          "fn": 88,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 34.8,
+          "recall": 35.8,
+          "f1": 35.3,
+          "tp": 49,
+          "fp": 92,
+          "fn": 88,
+          "num_prs": 50
+        },
+        "cloudaeye": {
+          "precision": 61.5,
+          "recall": 72.3,
+          "f1": 66.4,
+          "tp": 99,
+          "fp": 62,
+          "fn": 38,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 49.0,
+          "recall": 34.3,
+          "f1": 40.3,
+          "tp": 47,
+          "fp": 49,
+          "fn": 90,
+          "num_prs": 50
+        },
+        "coderabbit": {
+          "precision": 25.7,
+          "recall": 56.2,
+          "f1": 35.2,
+          "tp": 77,
+          "fp": 223,
+          "fn": 60,
+          "num_prs": 50
+        },
+        "qodo-extended": {
+          "precision": 37.2,
+          "recall": 62.8,
+          "f1": 46.7,
+          "tp": 86,
+          "fp": 145,
+          "fn": 51,
           "num_prs": 50
         }
       }
@@ -13148,60 +13148,6 @@
         ]
       },
       "overall_metrics": {
-        "devin": {
-          "precision": 54.2,
-          "recall": 38.0,
-          "f1": 44.6,
-          "tp": 52,
-          "fp": 44,
-          "fn": 85,
-          "num_prs": 50
-        },
-        "cloudaeye": {
-          "precision": 59.8,
-          "recall": 71.5,
-          "f1": 65.1,
-          "tp": 98,
-          "fp": 66,
-          "fn": 39,
-          "num_prs": 50
-        },
-        "kodus-v2": {
-          "precision": 44.9,
-          "recall": 35.0,
-          "f1": 39.3,
-          "tp": 48,
-          "fp": 59,
-          "fn": 89,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 100.0,
-          "recall": 8.8,
-          "f1": 16.1,
-          "tp": 12,
-          "fp": 0,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 44.7,
-          "recall": 15.3,
-          "f1": 22.8,
-          "tp": 21,
-          "fp": 26,
-          "fn": 116,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 49.0,
-          "recall": 35.8,
-          "f1": 41.4,
-          "tp": 49,
-          "fp": 51,
-          "fn": 88,
-          "num_prs": 50
-        },
         "bugbot": {
           "precision": 45.4,
           "recall": 43.1,
@@ -13209,105 +13155,6 @@
           "tp": 59,
           "fp": 71,
           "fn": 78,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 46.0,
-          "recall": 63.5,
-          "f1": 53.4,
-          "tp": 87,
-          "fp": 102,
-          "fn": 50,
-          "num_prs": 50
-        },
-        "qodo-extended-v2": {
-          "precision": 52.5,
-          "recall": 60.6,
-          "f1": 56.3,
-          "tp": 83,
-          "fp": 75,
-          "fn": 54,
-          "num_prs": 50
-        },
-        "cubic-v2": {
-          "precision": 55.6,
-          "recall": 68.6,
-          "f1": 61.4,
-          "tp": 94,
-          "fp": 75,
-          "fn": 43,
-          "num_prs": 50
-        },
-        "claude-code": {
-          "precision": 30.7,
-          "recall": 40.1,
-          "f1": 34.8,
-          "tp": 55,
-          "fp": 124,
-          "fn": 82,
-          "num_prs": 50
-        },
-        "sourcery": {
-          "precision": 33.3,
-          "recall": 51.8,
-          "f1": 40.6,
-          "tp": 71,
-          "fp": 142,
-          "fn": 66,
-          "num_prs": 50
-        },
-        "qodo-v2": {
-          "precision": 40.5,
-          "recall": 56.2,
-          "f1": 47.1,
-          "tp": 77,
-          "fp": 113,
-          "fn": 60,
-          "num_prs": 50
-        },
-        "macroscope": {
-          "precision": 45.8,
-          "recall": 43.8,
-          "f1": 44.8,
-          "tp": 60,
-          "fp": 71,
-          "fn": 77,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 52.6,
-          "recall": 36.5,
-          "f1": 43.1,
-          "tp": 50,
-          "fp": 45,
-          "fn": 87,
-          "num_prs": 50
-        },
-        "claude": {
-          "precision": 35.7,
-          "recall": 40.1,
-          "f1": 37.8,
-          "tp": 55,
-          "fp": 99,
-          "fn": 82,
-          "num_prs": 50
-        },
-        "copilot": {
-          "precision": 27.2,
-          "recall": 51.1,
-          "f1": 35.5,
-          "tp": 70,
-          "fp": 187,
-          "fn": 67,
-          "num_prs": 50
-        },
-        "qodo-extended": {
-          "precision": 35.3,
-          "recall": 61.3,
-          "f1": 44.8,
-          "tp": 84,
-          "fp": 154,
-          "fn": 53,
           "num_prs": 50
         },
         "greptile-v4-1": {
@@ -13319,13 +13166,85 @@
           "fn": 75,
           "num_prs": 50
         },
-        "coderabbit": {
-          "precision": 27.5,
-          "recall": 56.9,
-          "f1": 37.1,
-          "tp": 78,
-          "fp": 206,
-          "fn": 59,
+        "devin": {
+          "precision": 54.2,
+          "recall": 38.0,
+          "f1": 44.6,
+          "tp": 52,
+          "fp": 44,
+          "fn": 85,
+          "num_prs": 50
+        },
+        "macroscope": {
+          "precision": 45.8,
+          "recall": 43.8,
+          "f1": 44.8,
+          "tp": 60,
+          "fp": 71,
+          "fn": 77,
+          "num_prs": 50
+        },
+        "cubic-v2": {
+          "precision": 55.6,
+          "recall": 68.6,
+          "f1": 61.4,
+          "tp": 94,
+          "fp": 75,
+          "fn": 43,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 52.6,
+          "recall": 36.5,
+          "f1": 43.1,
+          "tp": 50,
+          "fp": 45,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "sourcery": {
+          "precision": 33.3,
+          "recall": 51.8,
+          "f1": 40.6,
+          "tp": 71,
+          "fp": 142,
+          "fn": 66,
+          "num_prs": 50
+        },
+        "claude-code": {
+          "precision": 30.7,
+          "recall": 40.1,
+          "f1": 34.8,
+          "tp": 55,
+          "fp": 124,
+          "fn": 82,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 46.0,
+          "recall": 63.5,
+          "f1": 53.4,
+          "tp": 87,
+          "fp": 102,
+          "fn": 50,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 44.7,
+          "recall": 15.3,
+          "f1": 22.8,
+          "tp": 21,
+          "fp": 26,
+          "fn": 116,
+          "num_prs": 50
+        },
+        "qodo-extended-v2": {
+          "precision": 52.5,
+          "recall": 60.6,
+          "f1": 56.3,
+          "tp": 83,
+          "fp": 75,
+          "fn": 54,
           "num_prs": 50
         },
         "gemini": {
@@ -13337,6 +13256,33 @@
           "fn": 88,
           "num_prs": 50
         },
+        "copilot": {
+          "precision": 27.2,
+          "recall": 51.1,
+          "f1": 35.5,
+          "tp": 70,
+          "fp": 187,
+          "fn": 67,
+          "num_prs": 50
+        },
+        "graphite": {
+          "precision": 100.0,
+          "recall": 8.8,
+          "f1": 16.1,
+          "tp": 12,
+          "fp": 0,
+          "fn": 125,
+          "num_prs": 50
+        },
+        "qodo-v2": {
+          "precision": 40.5,
+          "recall": 56.2,
+          "f1": 47.1,
+          "tp": 77,
+          "fp": 113,
+          "fn": 60,
+          "num_prs": 50
+        },
         "codeant-v2": {
           "precision": 31.1,
           "recall": 36.5,
@@ -13344,6 +13290,60 @@
           "tp": 50,
           "fp": 111,
           "fn": 87,
+          "num_prs": 50
+        },
+        "kodus-v2": {
+          "precision": 44.9,
+          "recall": 35.0,
+          "f1": 39.3,
+          "tp": 48,
+          "fp": 59,
+          "fn": 89,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 35.7,
+          "recall": 40.1,
+          "f1": 37.8,
+          "tp": 55,
+          "fp": 99,
+          "fn": 82,
+          "num_prs": 50
+        },
+        "cloudaeye": {
+          "precision": 59.8,
+          "recall": 71.5,
+          "f1": 65.1,
+          "tp": 98,
+          "fp": 66,
+          "fn": 39,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 49.0,
+          "recall": 35.8,
+          "f1": 41.4,
+          "tp": 49,
+          "fp": 51,
+          "fn": 88,
+          "num_prs": 50
+        },
+        "coderabbit": {
+          "precision": 27.5,
+          "recall": 56.9,
+          "f1": 37.1,
+          "tp": 78,
+          "fp": 206,
+          "fn": 59,
+          "num_prs": 50
+        },
+        "qodo-extended": {
+          "precision": 35.3,
+          "recall": 61.3,
+          "f1": 44.8,
+          "tp": 84,
+          "fp": 154,
+          "fn": 53,
           "num_prs": 50
         }
       }
@@ -19943,69 +19943,6 @@
         ]
       },
       "overall_metrics": {
-        "devin": {
-          "precision": 46.4,
-          "recall": 37.2,
-          "f1": 41.3,
-          "tp": 51,
-          "fp": 59,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "propel-v2": {
-          "precision": 36.6,
-          "recall": 46.0,
-          "f1": 40.8,
-          "tp": 63,
-          "fp": 109,
-          "fn": 74,
-          "num_prs": 50
-        },
-        "cloudaeye": {
-          "precision": 57.7,
-          "recall": 70.8,
-          "f1": 63.6,
-          "tp": 97,
-          "fp": 71,
-          "fn": 40,
-          "num_prs": 50
-        },
-        "kodus-v2": {
-          "precision": 35.9,
-          "recall": 34.3,
-          "f1": 35.1,
-          "tp": 47,
-          "fp": 84,
-          "fn": 90,
-          "num_prs": 50
-        },
-        "graphite": {
-          "precision": 80.0,
-          "recall": 8.8,
-          "f1": 15.8,
-          "tp": 12,
-          "fp": 3,
-          "fn": 125,
-          "num_prs": 50
-        },
-        "kg": {
-          "precision": 51.1,
-          "recall": 16.8,
-          "f1": 25.3,
-          "tp": 23,
-          "fp": 22,
-          "fn": 114,
-          "num_prs": 50
-        },
-        "baz": {
-          "precision": 39.5,
-          "recall": 34.3,
-          "f1": 36.7,
-          "tp": 47,
-          "fp": 72,
-          "fn": 90,
-          "num_prs": 50
-        },
         "bugbot": {
           "precision": 43.2,
           "recall": 43.8,
@@ -20013,105 +19950,6 @@
           "tp": 60,
           "fp": 79,
           "fn": 77,
-          "num_prs": 50
-        },
-        "augment": {
-          "precision": 41.9,
-          "recall": 60.6,
-          "f1": 49.6,
-          "tp": 83,
-          "fp": 115,
-          "fn": 54,
-          "num_prs": 50
-        },
-        "qodo-extended-v2": {
-          "precision": 48.1,
-          "recall": 56.9,
-          "f1": 52.2,
-          "tp": 78,
-          "fp": 84,
-          "fn": 59,
-          "num_prs": 50
-        },
-        "cubic-v2": {
-          "precision": 53.6,
-          "recall": 65.7,
-          "f1": 59.0,
-          "tp": 90,
-          "fp": 78,
-          "fn": 47,
-          "num_prs": 50
-        },
-        "claude-code": {
-          "precision": 27.4,
-          "recall": 41.6,
-          "f1": 33.0,
-          "tp": 57,
-          "fp": 151,
-          "fn": 80,
-          "num_prs": 50
-        },
-        "sourcery": {
-          "precision": 29.8,
-          "recall": 53.3,
-          "f1": 38.2,
-          "tp": 73,
-          "fp": 172,
-          "fn": 64,
-          "num_prs": 50
-        },
-        "qodo-v2": {
-          "precision": 36.2,
-          "recall": 56.2,
-          "f1": 44.0,
-          "tp": 77,
-          "fp": 136,
-          "fn": 60,
-          "num_prs": 50
-        },
-        "macroscope": {
-          "precision": 41.8,
-          "recall": 40.9,
-          "f1": 41.3,
-          "tp": 56,
-          "fp": 78,
-          "fn": 81,
-          "num_prs": 50
-        },
-        "propel": {
-          "precision": 45.0,
-          "recall": 36.5,
-          "f1": 40.3,
-          "tp": 50,
-          "fp": 61,
-          "fn": 87,
-          "num_prs": 50
-        },
-        "claude": {
-          "precision": 32.3,
-          "recall": 37.2,
-          "f1": 34.6,
-          "tp": 51,
-          "fp": 107,
-          "fn": 86,
-          "num_prs": 50
-        },
-        "copilot": {
-          "precision": 24.7,
-          "recall": 52.6,
-          "f1": 33.6,
-          "tp": 72,
-          "fp": 220,
-          "fn": 65,
-          "num_prs": 50
-        },
-        "qodo-extended": {
-          "precision": 31.4,
-          "recall": 59.9,
-          "f1": 41.2,
-          "tp": 82,
-          "fp": 179,
-          "fn": 55,
           "num_prs": 50
         },
         "greptile-v4-1": {
@@ -20123,13 +19961,94 @@
           "fn": 74,
           "num_prs": 50
         },
-        "coderabbit": {
-          "precision": 23.4,
-          "recall": 57.7,
-          "f1": 33.3,
-          "tp": 79,
-          "fp": 259,
-          "fn": 58,
+        "devin": {
+          "precision": 46.4,
+          "recall": 37.2,
+          "f1": 41.3,
+          "tp": 51,
+          "fp": 59,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "macroscope": {
+          "precision": 41.8,
+          "recall": 40.9,
+          "f1": 41.3,
+          "tp": 56,
+          "fp": 78,
+          "fn": 81,
+          "num_prs": 50
+        },
+        "cubic-v2": {
+          "precision": 53.6,
+          "recall": 65.7,
+          "f1": 59.0,
+          "tp": 90,
+          "fp": 78,
+          "fn": 47,
+          "num_prs": 50
+        },
+        "propel": {
+          "precision": 45.0,
+          "recall": 36.5,
+          "f1": 40.3,
+          "tp": 50,
+          "fp": 61,
+          "fn": 87,
+          "num_prs": 50
+        },
+        "sourcery": {
+          "precision": 29.8,
+          "recall": 53.3,
+          "f1": 38.2,
+          "tp": 73,
+          "fp": 172,
+          "fn": 64,
+          "num_prs": 50
+        },
+        "claude-code": {
+          "precision": 27.4,
+          "recall": 41.6,
+          "f1": 33.0,
+          "tp": 57,
+          "fp": 151,
+          "fn": 80,
+          "num_prs": 50
+        },
+        "propel-v2": {
+          "precision": 36.6,
+          "recall": 46.0,
+          "f1": 40.8,
+          "tp": 63,
+          "fp": 109,
+          "fn": 74,
+          "num_prs": 50
+        },
+        "augment": {
+          "precision": 41.9,
+          "recall": 60.6,
+          "f1": 49.6,
+          "tp": 83,
+          "fp": 115,
+          "fn": 54,
+          "num_prs": 50
+        },
+        "kg": {
+          "precision": 51.1,
+          "recall": 16.8,
+          "f1": 25.3,
+          "tp": 23,
+          "fp": 22,
+          "fn": 114,
+          "num_prs": 50
+        },
+        "qodo-extended-v2": {
+          "precision": 48.1,
+          "recall": 56.9,
+          "f1": 52.2,
+          "tp": 78,
+          "fp": 84,
+          "fn": 59,
           "num_prs": 50
         },
         "gemini": {
@@ -20141,6 +20060,33 @@
           "fn": 91,
           "num_prs": 50
         },
+        "copilot": {
+          "precision": 24.7,
+          "recall": 52.6,
+          "f1": 33.6,
+          "tp": 72,
+          "fp": 220,
+          "fn": 65,
+          "num_prs": 50
+        },
+        "graphite": {
+          "precision": 80.0,
+          "recall": 8.8,
+          "f1": 15.8,
+          "tp": 12,
+          "fp": 3,
+          "fn": 125,
+          "num_prs": 50
+        },
+        "qodo-v2": {
+          "precision": 36.2,
+          "recall": 56.2,
+          "f1": 44.0,
+          "tp": 77,
+          "fp": 136,
+          "fn": 60,
+          "num_prs": 50
+        },
         "codeant-v2": {
           "precision": 25.7,
           "recall": 34.3,
@@ -20148,6 +20094,60 @@
           "tp": 47,
           "fp": 136,
           "fn": 90,
+          "num_prs": 50
+        },
+        "kodus-v2": {
+          "precision": 35.9,
+          "recall": 34.3,
+          "f1": 35.1,
+          "tp": 47,
+          "fp": 84,
+          "fn": 90,
+          "num_prs": 50
+        },
+        "claude": {
+          "precision": 32.3,
+          "recall": 37.2,
+          "f1": 34.6,
+          "tp": 51,
+          "fp": 107,
+          "fn": 86,
+          "num_prs": 50
+        },
+        "cloudaeye": {
+          "precision": 57.7,
+          "recall": 70.8,
+          "f1": 63.6,
+          "tp": 97,
+          "fp": 71,
+          "fn": 40,
+          "num_prs": 50
+        },
+        "baz": {
+          "precision": 39.5,
+          "recall": 34.3,
+          "f1": 36.7,
+          "tp": 47,
+          "fp": 72,
+          "fn": 90,
+          "num_prs": 50
+        },
+        "coderabbit": {
+          "precision": 23.4,
+          "recall": 57.7,
+          "f1": 33.3,
+          "tp": 79,
+          "fp": 259,
+          "fn": 58,
+          "num_prs": 50
+        },
+        "qodo-extended": {
+          "precision": 31.4,
+          "recall": 59.9,
+          "f1": 41.2,
+          "tp": 82,
+          "fp": 179,
+          "fn": 55,
           "num_prs": 50
         }
       }
@@ -20165,19 +20165,16 @@
       "best_score": 100.0
     },
     {
-      "id": "tool_propel-v2_risk_high_context_file",
-      "label": "High Risk + File Context (Precision)",
+      "id": "tool_kodus-v2_domain_concurrency",
+      "label": "Best for Concurrency (Precision)",
       "filters": {
-        "risk": [
-          "high"
-        ],
-        "context": [
-          "file"
+        "domain": [
+          "concurrency"
         ]
       },
-      "description": "Significant impact, potential data loss. Requires full file understanding.",
+      "description": "Threading and async operations.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "propel-v2",
+      "best_tool": "kodus-v2",
       "best_score": 100.0,
       "sort": "precision"
     },
@@ -20213,16 +20210,19 @@
       "sort": "precision"
     },
     {
-      "id": "tool_kodus-v2_domain_concurrency",
-      "label": "Best for Concurrency (Precision)",
+      "id": "tool_propel-v2_risk_high_context_file",
+      "label": "High Risk + File Context (Precision)",
       "filters": {
-        "domain": [
-          "concurrency"
+        "risk": [
+          "high"
+        ],
+        "context": [
+          "file"
         ]
       },
-      "description": "Threading and async operations.",
+      "description": "Significant impact, potential data loss. Requires full file understanding.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "kodus-v2",
+      "best_tool": "propel-v2",
       "best_score": 100.0,
       "sort": "precision"
     },
@@ -20491,8 +20491,8 @@
       },
       "description": "Go codebases with concurrency patterns.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cloudaeye",
-      "best_score": 76.0
+      "best_tool": "cubic-v2",
+      "best_score": 75.5
     },
     {
       "id": "pr_size_small",
@@ -20519,19 +20519,6 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
       "best_score": 75.0
-    },
-    {
-      "id": "context_file",
-      "label": "Best for File Context",
-      "filters": {
-        "context": [
-          "file"
-        ]
-      },
-      "description": "Requires full file understanding.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cloudaeye",
-      "best_score": 74.6
     },
     {
       "id": "concern_security",
@@ -20564,6 +20551,19 @@
       "best_score": 74.4
     },
     {
+      "id": "context_file",
+      "label": "Best for File Context",
+      "filters": {
+        "context": [
+          "file"
+        ]
+      },
+      "description": "Requires full file understanding.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 74.3
+    },
+    {
       "id": "risk_high",
       "label": "Best for High Risk",
       "filters": {
@@ -20588,6 +20588,16 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
       "best_score": 72.7
+    },
+    {
+      "id": "high_recall",
+      "label": "Highest Recall",
+      "filters": {},
+      "sort": "recall",
+      "description": "Tools ranked by recall - catches more issues, may have more noise",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 72.3
     },
     {
       "id": "python_medium",
@@ -20617,16 +20627,6 @@
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
       "best_score": 72.0
-    },
-    {
-      "id": "high_recall",
-      "label": "Highest Recall",
-      "filters": {},
-      "sort": "recall",
-      "description": "Tools ranked by recall - catches more issues, may have more noise",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cloudaeye",
-      "best_score": 71.5
     },
     {
       "id": "domain_authentication",
@@ -20701,19 +20701,6 @@
       "best_score": 68.0
     },
     {
-      "id": "complexity_moderate",
-      "label": "Best for Moderate Code",
-      "filters": {
-        "complexity": [
-          "moderate"
-        ]
-      },
-      "description": "Some abstraction.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cloudaeye",
-      "best_score": 67.9
-    },
-    {
       "id": "complexity_complex",
       "label": "Best for Complex Code",
       "filters": {
@@ -20744,17 +20731,17 @@
       "best_score": 67.7
     },
     {
-      "id": "concern_correctness",
-      "label": "Best for Correctness",
+      "id": "complexity_moderate",
+      "label": "Best for Moderate Code",
       "filters": {
-        "concern": [
-          "correctness"
+        "complexity": [
+          "moderate"
         ]
       },
-      "description": "Logical correctness and expected behavior",
+      "description": "Some abstraction.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
-      "best_score": 67.0
+      "best_score": 67.6
     },
     {
       "id": "language_java",
@@ -20783,6 +20770,19 @@
       "best_score": 66.7
     },
     {
+      "id": "concern_correctness",
+      "label": "Best for Correctness",
+      "filters": {
+        "concern": [
+          "correctness"
+        ]
+      },
+      "description": "Logical correctness and expected behavior",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 66.7
+    },
+    {
       "id": "high_f1",
       "label": "Highest F1",
       "filters": {},
@@ -20790,20 +20790,7 @@
       "description": "Tools ranked by F1 score - balanced precision and recall",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
-      "best_score": 66.7
-    },
-    {
-      "id": "language_typescript",
-      "label": "Best for Typescript",
-      "filters": {
-        "language": [
-          "TypeScript"
-        ]
-      },
-      "description": "TypeScript codebases with frontend patterns.",
-      "best_model": "anthropic_claude-opus-4-5-20251101",
-      "best_tool": "cloudaeye",
-      "best_score": 65.7
+      "best_score": 66.4
     },
     {
       "id": "difficulty_subtle",
@@ -20816,7 +20803,20 @@
       "description": "Non-obvious, needs domain knowledge.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
-      "best_score": 65.2
+      "best_score": 64.9
+    },
+    {
+      "id": "language_typescript",
+      "label": "Best for Typescript",
+      "filters": {
+        "language": [
+          "TypeScript"
+        ]
+      },
+      "description": "TypeScript codebases with frontend patterns.",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
+      "best_tool": "cloudaeye",
+      "best_score": 64.8
     },
     {
       "id": "context_cross_file",
@@ -20829,7 +20829,7 @@
       "description": "Spans multiple files.",
       "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
-      "best_score": 64.0
+      "best_score": 63.7
     },
     {
       "id": "pr_size_medium",
@@ -20840,7 +20840,7 @@
         ]
       },
       "description": "Medium PRs with 3-5 files, typical feature development",
-      "best_model": "anthropic_claude-sonnet-4-5-20250929",
+      "best_model": "anthropic_claude-opus-4-5-20251101",
       "best_tool": "cloudaeye",
       "best_score": 63.2
     },
